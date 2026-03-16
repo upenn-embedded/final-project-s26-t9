@@ -34,6 +34,12 @@ Given robots at arbitrary starting positions and orientations, our goal is to co
 
 ![img](design_sketch.png)
 
+Each robot is triangular, with the ATmega and a prototyping board for electronics mounted on top. The triangle form factor allows three distinct faces, each carrying an interconnect magnet and a metal plate for connection detection with adjacent robots. Short robot legs elevate the body off the floor.
+
+On the bottom, the IR transmitter is centered and fires to transmit the signal. Each of the three faces has an IR digital receiver and a phototransistor to capture the reflected signal. Two vibration motors are mounted at angles on the underside to enable directional movement through differential activation.
+
+No special manufacturing is required. The chassis can be 3D printed, with components hand-soldered onto a perfboard.
+
 ### 5. Software Requirements Specification (SRS)
 
 **5.1 Definitions, Abbreviations**
