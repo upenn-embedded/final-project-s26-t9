@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Triangle Snap</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: sans-serif;
+    color: #888;
+    gap: 12px;
+  }
+  canvas {
+    background: #1a1a2e;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  p { font-size: 13px; letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<p>Drag triangles — edges snap flush when close</p>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+canvas.width = 900;
+canvas.height = 620;
+
+const SIDE = 95;
+const R = SIDE / Math.sqrt(3);   // circumradius
+const SNAP_DIST = 30;             // px between edge midpoints to trigger snap
+
+const COLORS = ['#e63946','#4895ef','#2ecc71','#f39c12','#a855f7','#14b8a6'];
+
+let tris = [
+  { x: 160, y: 170, a: 0,           color: COLORS[0] },
+  { x: 340, y: 170, a: Math.PI/4,   color: COLORS[1] },
+  { x: 520, y: 170, a: 0,           color: COLORS[2] },
+  { x: 200, y: 430, a: Math.PI,     color: COLORS[3] },
+  { x: 390, y: 430, a: 2*Math.PI/3, color: COLORS[4] },
+  { x: 570, y: 430, a: Math.PI/5,   color: COLORS[5] },
+];
+
+let drag = null;       // { idx, ox, oy }
+let snapInfo = null;   // { dragEdge, triIdx, triEdge }
+
+// ── geometry helpers ─────────────────────────────────────────────────────────
+
+function verts(tri) {
+  return [0, 1, 2].map(i => {
+    const angle = tri.a + Math.PI / 2 + i * 2 * Math.PI / 3;
+    return { x: tri.x + R * Math.cos(angle), y: tri.y + R * Math.sin(angle) };
+  });
+}
+
+function edgesOf(vs) {
+  return [[vs[0], vs[1]], [vs[1], vs[2]], [vs[2], vs[0]]];
+}
+
+function midpt(a, b) {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+function edgeAngle(a, b) {
+  return Math.atan2(b.y - a.y, b.x - a.x);
+}
+
+function pointInTri(px, py, vs) {
+  function cross(o, a, p) {
+    return (a.x - o.x) * (p.y - o.y) - (a.y - o.y) * (p.x - o.x);
+  }
+  const d1 = cross(vs[0], vs[1], { x: px, y: py });
+  const d2 = cross(vs[1], vs[2], { x: px, y: py });
+  const d3 = cross(vs[2], vs[0], { x: px, y: py });
+  return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+}
+
+// ── snap logic ────────────────────────────────────────────────────────────────
+
+function findSnap(dragIdx) {
+  const dVs = verts(tris[dragIdx]);
+  const dEs = edgesOf(dVs);
+  let best = null, bestD = SNAP_DIST;
+
+  for (let ti = 0; ti < tris.length; ti++) {
+    if (ti === dragIdx) continue;
+    const tEs = edgesOf(verts(tris[ti]));
+
+    for (let di = 0; di < 3; di++) {
+      const dM = midpt(dEs[di][0], dEs[di][1]);
+      for (let ei = 0; ei < 3; ei++) {
+        const tM = midpt(tEs[ei][0], tEs[ei][1]);
+        const d = Math.hypot(dM.x - tM.x, dM.y - tM.y);
+        if (d < bestD) { bestD = d; best = { dragEdge: di, triIdx: ti, triEdge: ei }; }
+      }
+    }
+  }
+  return best;
+}
+
+function applySnap(dragIdx, snap) {
+  const dragged = { ...tris[dragIdx] };
+  const tEs = edgesOf(verts(tris[snap.triIdx]));
+  const tEdge = tEs[snap.triEdge];
+  const tM = midpt(tEdge[0], tEdge[1]);
+  const targetAngle = edgeAngle(tEdge[0], tEdge[1]);
+
+  // rotate dragged edge to be anti-parallel to target edge
+  const dEs = edgesOf(verts(dragged));
+  const currAngle = edgeAngle(dEs[snap.dragEdge][0], dEs[snap.dragEdge][1]);
+  dragged.a += (targetAngle + Math.PI) - currAngle;
+
+  // translate so midpoints align
+  const newEs = edgesOf(verts(dragged));
+  const newM = midpt(newEs[snap.dragEdge][0], newEs[snap.dragEdge][1]);
+  dragged.x += tM.x - newM.x;
+  dragged.y += tM.y - newM.y;
+
+  return dragged;
+}
+
+// ── rendering ─────────────────────────────────────────────────────────────────
+
+function drawTri(tri, alpha, strokeColor, lineWidth) {
+  const vs = verts(tri);
+  ctx.beginPath();
+  ctx.moveTo(vs[0].x, vs[0].y);
+  ctx.lineTo(vs[1].x, vs[1].y);
+  ctx.lineTo(vs[2].x, vs[2].y);
+  ctx.closePath();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = tri.color;
+  ctx.fill();
+  if (strokeColor) {
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = lineWidth || 2;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = 0; i < tris.length; i++) {
+    if (drag && i === drag.idx) continue;
+    drawTri(tris[i], 1, 'rgba(255,255,255,0.12)', 2);
+  }
+
+  if (drag !== null) {
+    const idx = drag.idx;
+    if (snapInfo) {
+      // ghost showing snap destination
+      const snapped = applySnap(idx, snapInfo);
+      drawTri(snapped, 0.35, 'rgba(255,255,255,0.7)', 2.5);
+
+      // highlight the target edge
+      const tEs = edgesOf(verts(tris[snapInfo.triIdx]));
+      const te = tEs[snapInfo.triEdge];
+      ctx.beginPath();
+      ctx.moveTo(te[0].x, te[0].y);
+      ctx.lineTo(te[1].x, te[1].y);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.8;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    // dragged triangle on top
+    drawTri(tris[idx], 0.92, 'rgba(255,255,255,0.6)', 2.5);
+  }
+}
+
+// ── events ────────────────────────────────────────────────────────────────────
+
+canvas.addEventListener('mousedown', e => {
+  const { mx, my } = mouse(e);
+  for (let i = tris.length - 1; i >= 0; i--) {
+    if (pointInTri(mx, my, verts(tris[i]))) {
+      // bring to front
+      const t = tris.splice(i, 1)[0];
+      tris.push(t);
+      const idx = tris.length - 1;
+      drag = { idx, ox: mx - tris[idx].x, oy: my - tris[idx].y };
+      canvas.style.cursor = 'grabbing';
+      draw();
+      break;
+    }
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const { mx, my } = mouse(e);
+  if (drag) {
+    tris[drag.idx].x = mx - drag.ox;
+    tris[drag.idx].y = my - drag.oy;
+    snapInfo = findSnap(drag.idx);
+    draw();
+  } else {
+    const over = tris.some(t => pointInTri(mx, my, verts(t)));
+    canvas.style.cursor = over ? 'grab' : 'default';
+  }
+});
+
+function release() {
+  if (!drag) return;
+  if (snapInfo) {
+    tris[drag.idx] = applySnap(drag.idx, snapInfo);
+    snapInfo = null;
+  }
+  drag = null;
+  canvas.style.cursor = 'default';
+  draw();
+}
+
+canvas.addEventListener('mouseup', release);
+canvas.addEventListener('mouseleave', release);
+
+function mouse(e) {
+  const r = canvas.getBoundingClientRect();
+  return { mx: e.clientX - r.left, my: e.clientY - r.top };
+}
+
+draw();
+</script>
+</body>
+</html>

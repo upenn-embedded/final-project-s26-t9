@@ -120,9 +120,21 @@ The demo will be conducted on a hard, flat floor to ensure consistent vibration 
 
 ### Last week's progress
 
+Last week, we ordered parts and finalized the design for the robots to be triangles and the exact parts we needed for each. We also decided to use bluetooth instead of wifi for the connection and created the app for the demo.
+
 ### Current state of project
 
+We are currently building and testing just one robot for the project, and the strength of the vibration motors. We are testing various types of legs like paperclips, sticks, etc. and changing the duty cycle to see how to control it. We also acquired the parts we ordered.
+
+![img](sprint1_0.png)
+
+![img](sprint1_1.png)
+
+![](sprint1_2.png)
+
 ### Next week's plan
+
+We are going to design a base to put the motors on and test different configurations for the best control. We are also going to work on inter-robot communication with IR, distance detection, and the pathfinding algorithm.
 
 ## Sprint Review #2
 
