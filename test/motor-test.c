@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <stdint.h>
+#include <util/delay.h>
 
 /*
  * ATmega328PB PWM Pin Mapping:
@@ -15,7 +16,7 @@
 void
 timer0_pwm_init(void) {
     // Set OC0A (PD6) and OC0B (PD5) as outputs
-    DDRD |= (1 << DDD6);   // | (1 << DDD5);
+    DDRD |= (1 << DDD6) | (1 << DDD5);
 
     // Fast PWM 8-bit: WGM02:0 = 011 (TOP = 0xFF)
     // Non-inverting on OC0A and OC0B: COM0A1=1, COM0B1=1
@@ -60,20 +61,54 @@ set_motor_1B(uint8_t duty) {
     OCR1B = duty;
 }
 
+void
+motor_A_on(uint8_t duty) {
+    OCR0A = duty;
+}
+void
+motor_A_off(void) {
+    OCR0A = 0;
+}
+void
+motor_B_on(uint8_t duty) {
+    OCR0B = duty;
+}
+void
+motor_B_off(void) {
+    OCR0B = 0;
+}
+void
+motor_1A_on(uint8_t duty) {
+    OCR1A = duty;
+}
+void
+motor_1A_off(void) {
+    OCR1A = 0;
+}
+void
+motor_1B_on(uint8_t duty) {
+    OCR1B = duty;
+}
+void
+motor_1B_off(void) {
+    OCR1B = 0;
+}
+
 int
 main(void) {
     timer0_pwm_init();
-    //    timer1_pwm_init();
 
     uint8_t duty_cycle = 90;
 
-    // Example: all motors at 50% duty cycle
-    set_motor_0A(duty_cycle);
-    set_motor_0B(duty_cycle);
-    //    set_motor_1A(duty_cycle);
-    //    set_motor_1B(duty_cycle);
-
     while (1) {
-        // your application logic
+        motor_A_on(duty_cycle);
+        _delay_ms(1000);
+        motor_A_off();
+
+        _delay_ms(1000);
+
+        motor_B_on(duty_cycle);
+        _delay_ms(1000);
+        motor_B_off();
     }
 }
