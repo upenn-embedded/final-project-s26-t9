@@ -140,9 +140,19 @@ We are going to design a base to put the motors on and test different configurat
 
 ### Last week's progress
 
+We designed and 3D printed the robot base and are testing control by attaching the motors. We also worked in IR communication with distance and angle detection at different frequencies. 
+
 ### Current state of project
 
+We are currently working on locomotion and control with placements and speeds of motors and working on adding more robots to the swarm, as well as the pathfinding algorithm.
+
+![img](sprint2_0.png)
+
+![img](sprint2_1.png)
+
 ### Next week's plan
+
+We will connect the GUI to the robots using the ESP32 and work on inter-robot communication and control.
 
 ## MVP Demo
 
