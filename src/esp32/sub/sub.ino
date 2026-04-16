@@ -30,44 +30,46 @@
 #include <esp_now.h>
 
 /* ── Protocol constants (must match main ESP32 and ATmega) ───────────── */
-#define CMD_START_COLL  0xA1
-#define PKT_CMD         0xA1
-#define PKT_ADDR        0xA2
+#define CMD_START_COLL 0xA1
+#define PKT_CMD        0xA1
+#define PKT_ADDR       0xA2
 
 /* ── Timing ──────────────────────────────────────────────────────────── */
-#define TIME_PER_ESP    50   /* ms stagger per robot index */
+#define TIME_PER_ESP 50 /* ms stagger per robot index */
 
 /* ── SPI pin assignments ─────────────────────────────────────────────── */
-#define PIN_SCK   18
-#define PIN_MISO  19
-#define PIN_MOSI  23
-#define PIN_SS     5
+#define PIN_SCK  18
+#define PIN_MISO 33
+#define PIN_MOSI 17
+#define PIN_SS   5
 
 /* ── ESP-NOW packet ──────────────────────────────────────────────────── */
 struct EspPacket {
-    uint8_t type;        /* PKT_CMD or PKT_ADDR */
-    uint8_t robot_addr;  /* valid for PKT_ADDR only */
-    uint8_t pad[2];      /* align to 4 bytes */
+    uint8_t type;       /* PKT_CMD or PKT_ADDR */
+    uint8_t robot_addr; /* valid for PKT_ADDR only */
+    uint8_t pad[2];     /* align to 4 bytes */
 };
 
 /* ── Flag set by ESP-NOW callback, consumed in loop() ────────────────── */
 volatile bool cmd_received = false;
 
 /* ── ESP-NOW receive callback ────────────────────────────────────────── */
-void onEspNowReceive(const uint8_t *mac, const uint8_t *data, int len)
-{
-    if (len < (int)sizeof(EspPacket)) return;
-    const EspPacket *pkt = (const EspPacket *)data;
+void
+onEspNowReceive(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
+    if (len < (int) sizeof(EspPacket))
+        return;
+    const EspPacket *pkt = (const EspPacket *) data;
     if (pkt->type == PKT_CMD)
         cmd_received = true;
 }
 
 /* ── setup() intentionally empty ────────────────────────────────────── */
-void setup() {}
+void
+setup() {}
 
 /* ── Main loop ───────────────────────────────────────────────────────── */
-void loop()
-{
+void
+loop() {
     /* ── One-time initialization ── */
     static bool initialized = false;
     static const uint8_t broadcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -81,7 +83,8 @@ void loop()
 
         if (esp_now_init() != ESP_OK) {
             Serial.println("[SUB ESP32] ERROR: esp_now_init failed");
-            while (true) delay(1000);
+            while (true)
+                delay(1000);
         }
         esp_now_register_recv_cb(onEspNowReceive);
 
@@ -92,20 +95,22 @@ void loop()
         peer.encrypt = false;
         if (esp_now_add_peer(&peer) != ESP_OK) {
             Serial.println("[SUB ESP32] ERROR: esp_now_add_peer failed");
-            while (true) delay(1000);
+            while (true)
+                delay(1000);
         }
 
         /* SPI master to Sub ATmega */
         SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, PIN_SS);
         pinMode(PIN_SS, OUTPUT);
-        digitalWrite(PIN_SS, HIGH);  /* SS idle high */
+        digitalWrite(PIN_SS, HIGH); /* SS idle high */
 
         initialized = true;
         Serial.println("[SUB ESP32] Ready. MAC: " + WiFi.macAddress());
     }
 
     /* ── Spin until CMD received via ESP-NOW ── */
-    if (!cmd_received) return;
+    if (!cmd_received)
+        return;
     cmd_received = false;
 
     /*
@@ -116,8 +121,8 @@ void loop()
      */
     SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
     digitalWrite(PIN_SS, LOW);
-    SPI.transfer(1);               /* length prefix */
-    SPI.transfer(CMD_START_COLL);  /* command byte  */
+    SPI.transfer(1);              /* length prefix */
+    SPI.transfer(CMD_START_COLL); /* command byte  */
     digitalWrite(PIN_SS, HIGH);
     SPI.endTransaction();
 
@@ -136,8 +141,8 @@ void loop()
      */
     SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
     digitalWrite(PIN_SS, LOW);
-    uint8_t resp_len   = SPI.transfer(0x00);  /* ATmega sends length byte (=1) */
-    uint8_t robot_addr = SPI.transfer(0x00);  /* ATmega sends ROBOT_ADDRESS    */
+    uint8_t resp_len = SPI.transfer(0x00);   /* ATmega sends length byte (=1) */
+    uint8_t robot_addr = SPI.transfer(0x00); /* ATmega sends ROBOT_ADDRESS    */
     digitalWrite(PIN_SS, HIGH);
     SPI.endTransaction();
 
@@ -146,17 +151,16 @@ void loop()
         return;
     }
 
-    Serial.printf("[SUB ESP32] Got address=%u, staggering %u ms\n",
-                  robot_addr, (unsigned)(robot_addr * TIME_PER_ESP));
+    Serial.printf("[SUB ESP32] Got address=%u, staggering %u ms\n", robot_addr, (unsigned) (robot_addr * TIME_PER_ESP));
 
     /* ── Staggered delay: robot N waits N*TIME_PER_ESP ms ── */
-    delay((uint32_t)robot_addr * TIME_PER_ESP);
+    delay((uint32_t) robot_addr * TIME_PER_ESP);
 
     /* ── Broadcast address back via ESP-NOW ── */
     EspPacket resp;
-    resp.type       = PKT_ADDR;
+    resp.type = PKT_ADDR;
     resp.robot_addr = robot_addr;
-    resp.pad[0]     = 0;
-    resp.pad[1]     = 0;
-    esp_now_send(broadcast, (uint8_t *)&resp, sizeof(resp));
+    resp.pad[0] = 0;
+    resp.pad[1] = 0;
+    esp_now_send(broadcast, (uint8_t *) &resp, sizeof(resp));
 }
