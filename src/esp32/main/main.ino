@@ -117,9 +117,9 @@ void loop()
 
         /* Initialize SPI3 (VSPI) as slave */
         spi_bus_config_t buscfg = {};
-        buscfg.mosi_io_num   = 23;
-        buscfg.miso_io_num   = 19;
-        buscfg.sclk_io_num   = 18;
+        buscfg.mosi_io_num   = 17;  // MOSI from ATmega
+        buscfg.miso_io_num   = 33;  // MISO to ATmega
+        buscfg.sclk_io_num   = 18;  // SCK
         buscfg.quadwp_io_num = -1;
         buscfg.quadhd_io_num = -1;
 

@@ -39,8 +39,8 @@
 
 /* ── SPI pin assignments ─────────────────────────────────────────────── */
 #define PIN_SCK   18
-#define PIN_MISO  19
-#define PIN_MOSI  23
+#define PIN_MISO  33
+#define PIN_MOSI  17
 #define PIN_SS     5
 
 /* ── ESP-NOW packet ──────────────────────────────────────────────────── */
