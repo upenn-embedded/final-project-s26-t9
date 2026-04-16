@@ -163,6 +163,18 @@ int8_t spi_slave_receive(uint8_t *buf, uint8_t *len)
 {
     wait_ss_assert();                   /* wait for master's TX transaction */
 
+    /*
+     * Discard any SPIF that was set before this SS assertion (e.g. from a
+     * spurious clock during slave initialisation or a prior incomplete
+     * exchange that left SPIF uncleared).
+     *
+     * Safety: at 1 MHz SPI / 16 MHz CPU the first real byte cannot complete
+     * in the ~10 cycles between wait_ss_assert() returning and this check,
+     * so a set SPIF here is guaranteed to be stale, not the incoming length.
+     */
+    if (SPSR0 & (1 << SPIF))
+        (void)SPDR0;
+
     /* First byte clocked in is the payload length */
     while (!(SPSR0 & (1 << SPIF)));
     uint8_t incoming_len = SPDR0;
@@ -170,6 +182,9 @@ int8_t spi_slave_receive(uint8_t *buf, uint8_t *len)
 
     if (incoming_len > SPI_MAX_PAYLOAD) {
         wait_ss_deassert();
+        /* drain any SPIF that fired while we waited for SS to deassert */
+        while (SPSR0 & (1 << SPIF))
+            (void)SPDR0;
         *len = 0;
         return -1;
     }
@@ -181,6 +196,9 @@ int8_t spi_slave_receive(uint8_t *buf, uint8_t *len)
     }
 
     wait_ss_deassert();                 /* wait for master to end TX transaction */
+    /* drain any extra SPIF (master sent more bytes than expected) */
+    while (SPSR0 & (1 << SPIF))
+        (void)SPDR0;
     *len = incoming_len;
     return 0;
 }
