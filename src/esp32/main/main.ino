@@ -142,7 +142,7 @@ loop() {
         }
 
         initialized = true;
-        Serial.println("[MAIN ESP32] Ready. MAC: " + WiFi.macAddress());
+        // Serial.println("[MAIN ESP32] Ready. MAC: " + WiFi.macAddress());
     }
 
     /* ── Build trans1: receive CMD from ATmega ── */
@@ -206,5 +206,5 @@ loop() {
     prev_len = collected_count;
     memcpy(prev_response, (const void *) collected, collected_count);
 
-    Serial.printf("[MAIN ESP32] Cycle complete — collected %u robot(s)\n", collected_count);
+    // Serial.printf("[MAIN ESP32] Cycle complete — collected %u robot(s)\n", collected_count);
 }

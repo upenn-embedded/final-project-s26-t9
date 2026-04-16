@@ -105,7 +105,7 @@ loop() {
         digitalWrite(PIN_SS, HIGH); /* SS idle high */
 
         initialized = true;
-        Serial.println("[SUB ESP32] Ready. MAC: " + WiFi.macAddress());
+        // Serial.println("[SUB ESP32] Ready. MAC: " + WiFi.macAddress());
     }
 
     /* ── Spin until CMD received via ESP-NOW ── */
@@ -147,11 +147,11 @@ loop() {
     SPI.endTransaction();
 
     if (resp_len != 1) {
-        Serial.printf("[SUB ESP32] Bad resp_len=%u — skipping\n", resp_len);
+        // Serial.printf("[SUB ESP32] Bad resp_len=%u — skipping\n", resp_len);
         return;
     }
 
-    Serial.printf("[SUB ESP32] Got address=%u, staggering %u ms\n", robot_addr, (unsigned) (robot_addr * TIME_PER_ESP));
+    // Serial.printf("[SUB ESP32] Got address=%u, staggering %u ms\n", robot_addr, (unsigned) (robot_addr * TIME_PER_ESP));
 
     /* ── Staggered delay: robot N waits N*TIME_PER_ESP ms ── */
     delay((uint32_t) robot_addr * TIME_PER_ESP);

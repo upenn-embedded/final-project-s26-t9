@@ -53,7 +53,7 @@ int main(void)
          */
         if (spi_slave_receive(rx_buf, &rx_len) != 0)
         {
-            printf("[SUB ATMEGA %u] ERR: bad receive length\r\n",
+            // printf("[SUB ATMEGA %u] ERR: bad receive length\r\n",
                         (unsigned)ROBOT_ADDRESS);
             continue;
         }
@@ -61,7 +61,7 @@ int main(void)
         /* Expect exactly one command byte */
         if (rx_len != 1 || rx_buf[0] != CMD_START_COLL)
         {
-            printf("[SUB ATMEGA %u] ERR: unexpected cmd 0x%02X (len %u)\r\n",
+            // printf("[SUB ATMEGA %u] ERR: unexpected cmd 0x%02X (len %u)\r\n",
                         (unsigned)ROBOT_ADDRESS, rx_buf[0], rx_len);
             continue;
         }
@@ -80,12 +80,12 @@ int main(void)
          */
         if (spi_slave_send(tx_buf, sizeof(tx_buf)) != 0)
         {
-            printf("[SUB ATMEGA %u] ERR: send failed\r\n",
+            // printf("[SUB ATMEGA %u] ERR: send failed\r\n",
                         (unsigned)ROBOT_ADDRESS);
         }
         else
         {
-            printf("[SUB ATMEGA %u] Sent address %u\r\n",
+            // printf("[SUB ATMEGA %u] Sent address %u\r\n",
                         (unsigned)ROBOT_ADDRESS, (unsigned)ROBOT_ADDRESS);
         }
     }

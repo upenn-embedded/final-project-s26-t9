@@ -33,7 +33,7 @@ int main(void)
     uart_init();
     spi_master_init();
 
-    printf("[MAIN ATMEGA] Ready\r\n");
+    // printf("[MAIN ATMEGA] Ready\r\n");
 
     uint8_t tx_buf[]             = { CMD_START_COLL };
     uint8_t rx_buf[SPI_MAX_PAYLOAD];
