@@ -1,6 +1,7 @@
 /*
- * ESP32 SPI Master Test
- * Sends 0xAB to ATmega slave every second, prints the response.
+ * ESP32 SPI RX Test
+ * Clocks out a dummy 0x00 every second to read a byte from the ATmega slave.
+ * Expected: ATmega sends an incrementing counter (0x00, 0x01, 0x02, ...).
  *
  * Wiring (VSPI):
  *   ESP32 GPIO18 (SCK)  -> ATmega PB5 (SCK)
@@ -18,7 +19,7 @@
 #define SS_PIN    5
 
 void setup() {
-    // intentionally empty — project constraint
+    // intentionally empty
 }
 
 void loop() {
@@ -33,19 +34,18 @@ void loop() {
         digitalWrite(SS_PIN, HIGH);
 
         initialized = true;
-        Serial.println("ESP32 SPI master ready");
+        Serial.println("ESP32 SPI RX test ready");
     }
 
-    uint8_t tx = 0xAB;
     uint8_t rx;
 
-    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE0));
     digitalWrite(SS_PIN, LOW);
-    rx = SPI.transfer(tx);
+    rx = SPI.transfer(0x00);   // dummy byte — just clocks out ATmega's SPDR
     digitalWrite(SS_PIN, HIGH);
     SPI.endTransaction();
 
-    Serial.printf("Sent: 0x%02X  Received: 0x%02X\n", tx, rx);
+    Serial.printf("Received from ATmega: 0x%02X\n", rx);
 
     delay(1000);
 }
