@@ -22,12 +22,15 @@
 /* ── Protocol (must match ESP32 firmware) ─────────────────────────── */
 #define CMD_START_COLL  0xA1
 
-/* Pause between complete START_COLL cycles */
-#define CYCLE_DELAY_MS  100
+/* Pause between complete START_COLL cycles.
+ * Must exceed the Main ESP32's COLLECT_TIMEOUT (150 ms) so the ESP32
+ * finishes collecting sub-robot addresses before the next CMD arrives. */
+#define CYCLE_DELAY_MS  200
 
 /* ── Main ─────────────────────────────────────────────────────────── */
 int main(void)
 {
+    uart_init();
     spi_master_init();
 
     printf("[MAIN ATMEGA] Ready\r\n");

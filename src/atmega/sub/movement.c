@@ -55,35 +55,35 @@ void InitializeMovement(void) {
 }
 
 void turn_cw() {
-    PORTB |= (1 << PORTC0);
-    PORTB &= ~(1 << PORTB1);
-    PORTB &= ~(1 << PORTB2);
-    PORTB | =(1 << PORTC3);
+    PORTC |=  (1 << PORTC0);
+    PORTC &= ~(1 << PORTC1);
+    PORTC &= ~(1 << PORTC2);
+    PORTC |=  (1 << PORTC3);
 }
 
 void turn_ccw() {
-    PORTB &= ~(1 << PORTC0);
-    PORTB |=  (1 << PORTC1);
-    PORTB |= (1 << PORTC2);
-    PORTB &= ~(1 << PORTC3);
+    PORTC &= ~(1 << PORTC0);
+    PORTC |=  (1 << PORTC1);
+    PORTC |=  (1 << PORTC2);
+    PORTC &= ~(1 << PORTC3);
 }
 
 void move_forward() {
-    PORTB &= ~(1 << PORTC0);
-    PORTB |=  (1 << PORTC1);
-    PORTB &= ~(1 << PORTC2);
-    PORTB |=  (1 << PORTC3);
+    PORTC &= ~(1 << PORTC0);
+    PORTC |=  (1 << PORTC1);
+    PORTC &= ~(1 << PORTC2);
+    PORTC |=  (1 << PORTC3);
 }
 
 void move_backward() {
-    PORTB |=  (1 << PORTC0);
-    PORTB &= ~(1 << PORTC1);
-    PORTB |=  (1 << PORTC2);
-    PORTB &= ~(1 << PORTC3);
+    PORTC |=  (1 << PORTC0);
+    PORTC &= ~(1 << PORTC1);
+    PORTC |=  (1 << PORTC2);
+    PORTC &= ~(1 << PORTC3);
 }
 
 void stop_movement() {
-    PORTB &= ~((1 << PORTC0) | (1 << PORTC1) | (1 << PORTC2) & (1 << PORTC3));
+    PORTC &= ~((1 << PORTC0) | (1 << PORTC1) | (1 << PORTC2) | (1 << PORTC3));
 }
 
 //int main(void) {

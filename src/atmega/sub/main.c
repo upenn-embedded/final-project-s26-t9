@@ -32,6 +32,7 @@
 /* ── Main ─────────────────────────────────────────────────────────── */
 int main(void)
 {
+    uart_init();
     spi_slave_init();
 
     printf("[SUB ATMEGA %u] Ready\r\n", (unsigned)ROBOT_ADDRESS);
