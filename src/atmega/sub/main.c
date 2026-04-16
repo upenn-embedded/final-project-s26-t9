@@ -66,9 +66,6 @@ int main(void)
             continue;
         }
 
-        printf("[SUB ATMEGA %u] Got START_COLL, sending address\r\n",
-                    (unsigned)ROBOT_ADDRESS);
-
         /*
          * ── 2. Send our address back ──
          *
@@ -76,11 +73,20 @@ int main(void)
          * so it is ready before the ESP32 starts its RX transaction after
          * the guard delay.  It then blocks until the full [LEN][DATA...]
          * frame has been clocked out on MISO.
+         *
+         * NOTE: do NOT uart_printf between receive and send — printf at
+         * 115200 baud takes ~4 ms, which blows past the Sub ESP32's 300 µs
+         * guard delay, causing the ESP32 to read a stale/garbage SPDR.
          */
         if (spi_slave_send(tx_buf, sizeof(tx_buf)) != 0)
         {
             printf("[SUB ATMEGA %u] ERR: send failed\r\n",
                         (unsigned)ROBOT_ADDRESS);
+        }
+        else
+        {
+            printf("[SUB ATMEGA %u] Sent address %u\r\n",
+                        (unsigned)ROBOT_ADDRESS, (unsigned)ROBOT_ADDRESS);
         }
     }
 }
