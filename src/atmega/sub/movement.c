@@ -86,16 +86,16 @@ void stop_movement() {
     PORTC &= ~((1 << PORTC0) | (1 << PORTC1) | (1 << PORTC2) | (1 << PORTC3));
 }
 
-//int main(void) {
-//    uart_init();
-//    Initialize();
-//
-//    while (1) {
-//        printf("ADC: %d\n", ADC);
-//        _delay_ms(50);
-//        if (!(PIND & (1 << PD4))) {
-//            printf("ON");
-//        }
-//        // your application logic
-//    }
-//}
+int main(void) {
+   uart_init();
+   Initialize();
+
+   while (1) {
+       printf("ADC: %d\n", ADC);
+       _delay_ms(50);
+       if (!(PIND & (1 << PD4))) {
+           printf("ON");
+       }
+       // your application logic
+   }
+}
