@@ -140,7 +140,7 @@ We are going to design a base to put the motors on and test different configurat
 
 ### Last week's progress
 
-We designed and 3D printed the robot base and are testing control by attaching the motors. We also worked in IR communication with distance and angle detection at different frequencies. 
+We designed and 3D printed the robot base and are testing control by attaching the motors. We also worked in IR communication with distance and angle detection at different frequencies.
 
 ### Current state of project
 
@@ -155,6 +155,77 @@ We are currently working on locomotion and control with placements and speeds of
 We will connect the GUI to the robots using the ESP32 and work on inter-robot communication and control.
 
 ## MVP Demo
+
+### 1. System Block Diagram
+
+The overall architecture is unchanged from the proposal. The Main ATmega328PB acts as the central controller. It communicates over SPI to a Main ESP32, which broadcasts commands over ESP-NOW to Sub ESP32s (one per robot). Each Sub ESP32 relays commands over SPI to its paired Sub ATmega328PB, which drives the motors and reads IR sensors. Responses travel back up the same chain.
+
+![img](block_diagram.png)
+
+### 2. Firmware Implementation
+
+**SPI Driver (`src/atmega/common/spi_comm.c`)**
+Custom bare-metal SPI driver for the ATmega328PB supporting both controller and peripheral roles. Uses a two-transaction framed protocol: `[LEN][DATA...]`. A guard delay between TX and RX transactions (200 µs) gives the peripheral time to pre-load its response into `SPDR` before the controller clocks it out.
+
+**Main ATmega (`src/atmega/main/main.c`)**
+Polls every 200 ms by sending `CMD_START_COLL` (0xA1) to the Main ESP32 over SPI, then reads back the array of robot addresses collected in the previous cycle.
+
+**Main ESP32 (`src/esp32/main/main.ino`)**
+SPI peripheral to the Main ATmega, ESP-NOW hub to all Sub ESP32s. Pre-queues two SPI transactions in hardware (receive CMD, then send previous cycle's collected addresses) so the ATmega's 200 µs guard window is handled without CPU involvement. After receiving CMD, broadcasts `PKT_CMD` via ESP-NOW and waits 150 ms for sub-robot replies.
+
+**Sub ESP32 (`src/esp32/sub/sub.ino`)**
+On receiving `PKT_CMD` via ESP-NOW, acts as SPI controller to query its paired Sub ATmega for its robot address. Staggered reply delay (`ROBOT_ADDRESS × 50 ms`) prevents ESP-NOW packet collisions. Broadcasts `PKT_ADDR` back to the Main ESP32.
+
+**Movement Driver (`src/atmega/sub/movement.c`)**
+Controls two DC wheel motors via four GPIO outputs (H-bridge style). Implements `move_forward()`, `move_backward()`, `turn_cw()`, `turn_ccw()`, and `stop_movement()`. Also initializes ADC in free-running mode on PC0 for IR phototransistor readings, and generates a 38 kHz carrier on OC2B (PD3) via Timer2 for the IR transmitter.
+
+### 3. Demo
+
+![img](robot.jpeg)
+
+![img](esp_atmegas.PNG)
+
+![img](ir_perfboards.PNG)
+
+The 3D-printed triangular robot chassis is complete with legs, wheel motor mounts, and slots for electronics. Each part of the full communication chain (Main ATmega → Main ESP32 → Sub ESP32 → Sub ATmega) is working: the Main ATmega successfully polls and receives robot addresses from both sub-robots. Motor control firmware drives the robot in all four directions using DC wheel motors. IR perfboards with phototransistors and transmitter have been assembled and are next to test.
+
+[Demo video](robot_movement.mov)
+
+### 4. SRS Results
+
+| ID     | Description                                                                 | Validation Outcome                                                                                                                                                        |
+| ------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SRS-01 | Each robot moves in at least 4 distinct directions via wheel motors.        | **Confirmed.** `move_forward()`, `move_backward()`, `turn_cw()`, `turn_ccw()` implemented and tested; directional displacement observed visually.           |
+| SRS-02 | Each robot measures ambient-corrected IR distance within ±1 cm.            | **Partial.** ADC and 38 kHz IR carrier initialized. Distance calibration not yet complete.                                                                          |
+| SRS-03 | Each robot detects physical connection via GPIO within 500 ms.              | **Not yet validated.** Magnet/plate connection detection hardware assembled; firmware polling not yet integrated.                                                   |
+| SRS-04 | Each robot transmits sensor data to main MCU within 200 ms of being polled. | **Confirmed.** End-to-end poll cycle (ATmega → ESP32 → ESP-NOW → Sub ESP32 → Sub ATmega → back) completes well within the 200 ms bound across repeated trials. |
+| SRS-05 | Main MCU constructs a graph of relative robot positions within 1 second.    | **Partial.** Main ATmega successfully receives robot addresses from both sub-robots. Full graph construction with IR distances not yet implemented.                 |
+| SRS-06 | Path-planning algorithm computes movement instructions within 3 seconds.    | **Not yet implemented.** Path planning for the 2-robot case is in progress.                                                                                         |
+| SRS-07 | All robots form the target shape within 3 cm of designated positions.       | **Not yet validated.** Dependent on SRS-06 completion.                                                                                                              |
+
+### 5. HRS Results
+
+| ID     | Description                                                                               | Validation Outcome                                                                                                                      |
+| ------ | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| HRS-01 | Each wheel motor produces sufficient force to move the robot within 0.5 s.                | **Confirmed.** Both motors activated; robot displaces directionally on hard flat surface.                                         |
+| HRS-02 | IR phototransistor produces distinguishable ADC readings across 1–10 cm, ≥10 counts/cm. | **Partial.** ADC readings confirmed to vary with distance; full calibration across range in progress.                             |
+| HRS-03 | nRF24L01+ maintains <5% packet loss at 5 m.                                               | **Confirmed.** ESP-NOW communication (used in place of nRF24L01+) tested at range with no observed packet loss across 20+ cycles. |
+| HRS-04 | Magnets hold robots under wheel motor operation but allow separation at full power.       | **Not yet validated.** Magnets not yet installed on chassis; hold strength testing pending.                                      |
+| HRS-05 | Conductive plates produce GPIO HIGH within 200 ms of contact.                             | **Not yet validated.** Hardware assembled; firmware integration pending.                                                          |
+| HRS-06 | LDOs maintain 3.3V with <100 mV ripple under full load.                                   | **Not yet validated.** Power system validation pending battery integration.                                                       |
+| HRS-07 | Battery sustains operation for 10 minutes without dropping below 3.6V.                    | **Not yet validated.** Battery runtime test pending.                                                                              |
+
+### 6. Remaining Work
+
+- **Path planning (2-robot case):** Compute movement instructions from 2-node graph and send motor commands to each robot.
+- **IR distance calibration:** Complete ambient subtraction and distance-to-ADC mapping.
+- **Connection detection:** Integrate conductive-plate GPIO polling into sub ATmega firmware.
+- **Battery power:** Integrate battery + LDO power system and validate runtime.
+- **Chassis integration:** Mount all electronics into 3D-printed chassis.
+
+### 7. Biggest Risk
+
+The riskiest remaining element is integration and path planning. We have a lot of the individual components in place such as communication, locomotion,etc. but have to integrate them all which is serving to be more complicated than expected.
 
 ## Final Report
 
