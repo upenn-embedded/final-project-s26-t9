@@ -218,6 +218,7 @@ int8_t spi_slave_send(const uint8_t *buf, uint8_t len)
 
     /* Length byte is being shifted out; master sends a dummy byte */
     while (!(SPSR0 & (1 << SPIF)));
+    SPDR0 = (len > 0) ? buf[0] : 0x00;
     (void)SPDR0;                         /* discard the master's dummy */
 
     for (uint8_t i = 0; i < len; i++) {
