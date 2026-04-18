@@ -1,27 +1,54 @@
+/*
+ * main_esp32.ino
+ * ==============
+ * Role: Main ESP32 — SPI SLAVE to Main ATmega328PB, ESP-NOW hub to Sub ESP32s
+ *
+ * Flow (sequential, single-cycle):
+ *   1. Queue trans1: wait to receive [LEN][CMD_START_COLL] from ATmega.
+ *   2. Validate received command.
+ *   3. Broadcast CMD_START_COLL via ESP-NOW to all sub ESP32s.
+ *   4. Wait COLLECT_TIMEOUT ms for sub ESP32 replies.
+ *   5. Print collected robot addresses.
+ *   6. Queue trans2: send [LEN][ADDR0][ADDR1...] back to ATmega.
+ *   7. Repeat.
+ *
+ * NOTE: All initialization is inside loop() behind a static-bool guard.
+ *       setup() is intentionally empty.
+ *
+ * SPI pins (VSPI / SPI3, slave to Main ATmega):
+ *   SCK  = GPIO18   MISO = GPIO33   MOSI = GPIO17   SS = GPIO5
+ */
+
 #include "driver/spi_slave.h"
 #include <Arduino.h>
 #include <WiFi.h>
 #include <esp_now.h>
 
+/* ── Protocol constants (must match sub firmware and ATmega) ─────────── */
 #define CMD_START_COLL 0xA1
 #define PKT_CMD        0xA1
 #define PKT_ADDR       0xA2
 
+/* ── Timing ──────────────────────────────────────────────────────────── */
 #define MAX_ROBOTS      2
 #define COLLECT_TIMEOUT 150 /* ms: wait window for sub ESP32 replies */
 
+/* ── SPI buffer size ─────────────────────────────────────────────────── */
 /* 1 length byte + up to MAX_ROBOTS payload bytes + spare */
 #define SPI_BUF_SIZE 66
 
+/* ── ESP-NOW packet ──────────────────────────────────────────────────── */
 struct EspPacket {
     uint8_t type;       /* PKT_CMD or PKT_ADDR */
     uint8_t robot_addr; /* valid for PKT_ADDR only */
     uint8_t pad[2];     /* align to 4 bytes */
 };
 
+/* ── Globals shared between ESP-NOW callback and loop() ──────────────── */
 volatile uint8_t collected[MAX_ROBOTS];
 volatile uint8_t collected_count = 0;
 
+/* ── ESP-NOW receive callback (runs on WiFi task) ────────────────────── */
 void onEspNowReceive(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
     if (len < (int)sizeof(EspPacket)) return;
     const EspPacket *pkt = (const EspPacket *)data;
@@ -30,8 +57,10 @@ void onEspNowReceive(const esp_now_recv_info_t *info, const uint8_t *data, int l
         collected[collected_count++] = pkt->robot_addr;
 }
 
+/* ── setup() intentionally empty ────────────────────────────────────── */
 void setup() {}
 
+/* ── Main loop ───────────────────────────────────────────────────────── */
 void loop() {
 
     /* ── One-time initialization ── */
@@ -95,10 +124,13 @@ void loop() {
         }
 
         initialized = true;
-        delay(1000);
         Serial.println("[MAIN ESP32] Ready. MAC: " + WiFi.macAddress());
     }
 
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     * STEP 1 — Receive CMD_START_COLL from ATmega via SPI
+     * Protocol: ATmega sends [0x01][0xA1] (length=1, cmd=CMD_START_COLL)
+     * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     memset(tx1, 0xFF, SPI_BUF_SIZE); /* MISO don't-care while receiving */
     memset(rx1, 0x00, SPI_BUF_SIZE);
 
@@ -120,7 +152,9 @@ void loop() {
     }
     Serial.println("[MAIN ESP32] CMD_START_COLL received from ATmega");
 
-    // Broadcast cmd with ESPNOW
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     * STEP 2 — Broadcast CMD_START_COLL to all sub ESP32s via ESP-NOW
+     * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     collected_count = 0;
     memset((void *)collected, 0, sizeof(collected));
 
@@ -132,7 +166,9 @@ void loop() {
     esp_now_send(broadcast, (uint8_t *)&cmd_pkt, sizeof(cmd_pkt));
     Serial.println("[MAIN ESP32] CMD_START_COLL broadcast via ESP-NOW");
 
-    // Wait for a reply
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     * STEP 3 — Wait for sub ESP32 replies
+     * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     delay(COLLECT_TIMEOUT);
 
     /* Snapshot volatile data once */
@@ -140,13 +176,20 @@ void loop() {
     uint8_t snap_addrs[MAX_ROBOTS];
     memcpy(snap_addrs, (const void *)collected, snap_count);
 
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     * STEP 4 — Print collected robot addresses
+     * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     Serial.printf("[MAIN ESP32] Collected %u robot(s):", snap_count);
     for (uint8_t i = 0; i < snap_count; i++) {
         Serial.printf("  [%u] = 0x%02X", i, snap_addrs[i]);
     }
     Serial.println();
 
-    // Send data back to atmega
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     * STEP 5 — Send collected addresses back to ATmega via SPI
+     * Protocol: [LEN][ADDR0][ADDR1...] — ATmega's spi_receive_response()
+     *           reads the length byte first, then that many address bytes.
+     * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     tx2[0] = snap_count;
     memcpy(tx2 + 1, snap_addrs, snap_count);
     memset(tx2 + 1 + snap_count, 0xFF, SPI_BUF_SIZE - 1 - snap_count); /* pad remainder */
