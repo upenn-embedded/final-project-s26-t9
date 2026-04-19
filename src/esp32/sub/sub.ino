@@ -7,11 +7,11 @@
 #define PKT_CMD        0xA1
 #define PKT_ADDR       0xA2
 
-#define TIME_PER_ESP 50  // ms stagger per robot index
+#define TIME_PER_ESP 50 
 
 #define SS_PIN       5
-#define SPI_FREQ     1000000  // 1 MHz — must match ATmega SPR0=1 @ 16 MHz
-#define SPI_GUARD_US 1000     // microseconds between TX and RX transactions
+#define SPI_FREQ     1000000
+#define SPI_GUARD_US 1000
 
 static const SPISettings spi_cfg(SPI_FREQ, MSBFIRST, SPI_MODE0);
 
@@ -23,7 +23,6 @@ struct EspPacket {
 
 volatile bool cmd_received = false;
 
-// Callback
 void onEspNowReceive(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
     if (len < (int)sizeof(EspPacket)) return;
     const EspPacket *pkt = (const EspPacket *)data;
@@ -39,7 +38,6 @@ void setup() {
   pinMode(SS_PIN, OUTPUT);
   digitalWrite(SS_PIN, HIGH);
 
-  // WiFi in station mode (required for ESP-NOW)
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
 
@@ -68,7 +66,6 @@ void loop() {
     cmd_received = false;
     delay(5);
 
-    // Transaction 1: send [LEN=1][CMD_START_COLL] to Sub ATmega
     portDISABLE_INTERRUPTS();
 
     digitalWrite(SS_PIN, LOW);
@@ -76,10 +73,8 @@ void loop() {
     SPI.transfer(CMD_START_COLL);
     digitalWrite(SS_PIN, HIGH);
 
-    // guard delay
     delayMicroseconds(1000);
 
-    // Transaction 2: clock in [LEN][ROBOT_ADDRESS] from Sub ATmega
     digitalWrite(SS_PIN, LOW);
     uint8_t len  = SPI.transfer(0x00);
     uint8_t addr = SPI.transfer(0x00);
@@ -96,7 +91,6 @@ void loop() {
     Serial.printf("[SUB ESP32] Got address=0x%02X, staggering %u ms\n",
                   addr, (unsigned)(addr * TIME_PER_ESP));
 
-    // Staggered delay then broadcast
     delay((uint32_t)addr * TIME_PER_ESP);
 
     EspPacket resp;

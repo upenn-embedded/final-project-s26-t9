@@ -3,8 +3,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include "spi_comm.h"
-#include "uart.h" 
-
+#include "uart.h"
 
 #ifndef ROBOT_ADDRESS
 #  define ROBOT_ADDRESS  2 
@@ -22,7 +21,6 @@ int main(void)
     uint8_t rx_buf[SPI_MAX_PAYLOAD];
     uint8_t rx_len = 0;
 
-    /* Response is always just our one-byte address */
     uint8_t tx_buf[] = { (uint8_t)ROBOT_ADDRESS };
 
     while (1)

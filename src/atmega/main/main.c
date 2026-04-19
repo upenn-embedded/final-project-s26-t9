@@ -4,7 +4,7 @@
 #include <util/delay.h>
 #include <stdint.h>
 #include "spi_comm.h"
-#include "uart.h"               
+#include "uart.h" 
 
 #define CMD_START_COLL  0xA1
 
@@ -23,18 +23,24 @@ int main(void)
 
     while (1)
     {
-        int8_t result = spi_exchange(tx_buf, sizeof(tx_buf), rx_buf, &rx_len);
+        int8_t result = spi_send_message(tx_buf, sizeof(tx_buf));
 
         if (result != 0)
         {
-            printf("[MAIN ATMEGA] ERR: spi_exchange failed\r\n");
+            printf("[MAIN ATMEGA] ERR: spi send failed\r\n");
+            continue;
         }
-        else
-        {
-            uint8_t robot_count = rx_buf[0];
+        
+        _delay_ms(1000);
+        result = spi_receive_response(rx_buf, &rx_len);
+        if (result != 0) {
+            printf("[MAIN ATMEGA] ERR: spi recieve failed\r\n");
+            continue;
+        } else {
+            uint8_t robot_count = rx_len;
             printf("[MAIN ATMEGA] Received %u robot(s):", robot_count);
             for (uint8_t i = 0; i < robot_count; i++)
-                printf(" 0x%02X", rx_buf[1 + i]);
+                printf(" 0x%02X", rx_buf[i]);
             printf("\r\n");
         }
 

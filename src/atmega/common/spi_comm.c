@@ -1,48 +1,16 @@
-/*
- * atmega328pb_spi.c
- * =================
- * Bare-metal SPI driver for the ATmega328PB.
- * Supports Master (Main ATmega) and Slave (Sub ATmega) roles.
- *
- * SPI0 pin mapping:
- *   /SS  -> PB2  (master: output driven by firmware)
- *                (slave:  input  driven by ESP32)
- *   MOSI -> PB3  (master: output / slave: input)
- *   MISO -> PB4  (master: input  / slave: output)
- *   SCK  -> PB5  (master: output / slave: input)
- *
- * Master frame format (two CS transactions per exchange):
- *   TX transaction:  CS_low -> [LEN][DATA...] -> CS_high
- *   <guard delay ? slave prepares its response during this window>
- *   RX transaction:  CS_low -> dummy bytes -> reads [LEN][DATA...] -> CS_high
- *
- * Slave mirrors this exactly from the other side.
- *
- * Build (choose the role with -DSPI_ROLE_MASTER or -DSPI_ROLE_SLAVE):
- *   avr-gcc -mmcu=atmega328pb -DF_CPU=16000000UL -O2 -o out.elf atmega328pb_spi.c
- */
-
 #include "spi_comm.h"
 #include <avr/io.h>
 #include <util/delay.h>
 
-/* ?? Pin / register aliases ????????????????????????????????????????? */
 #define SPI_DDR   DDRB
 #define SPI_PORT  PORTB
-#define SPI_PIN   PINB      /* input register ? used to poll /SS state */
+#define SPI_PIN   PINB
 #define PIN_SS    PB2
 #define PIN_MOSI  PB3
 #define PIN_MISO  PB4
 #define PIN_SCK   PB5
 
-/*
- * Guard time between the master's TX and RX transactions (µs).
- * The slave uses this window to prepare its response in SPDR.
- * Increase if the slave needs more processing time.
- */
 #define SPI_GUARD_US    200
-
-/* ?? Shared low-level helpers ??????????????????????????????????????? */
 
 static inline uint8_t spi_transfer_byte(uint8_t tx)
 {
@@ -51,49 +19,26 @@ static inline uint8_t spi_transfer_byte(uint8_t tx)
     return SPDR0;
 }
 
-/* ?? Master helpers ????????????????????????????????????????????????? */
-
 static inline void cs_assert(void)   { SPI_PORT &= ~(1 << PIN_SS); }
 static inline void cs_deassert(void) { SPI_PORT |=  (1 << PIN_SS); }
 
-/* ?? Slave helpers ?????????????????????????????????????????????????? */
-
-/*
- * Poll until the master drives /SS low (start of a transaction).
- * Because the SPI hardware only shifts when /SS is asserted, waiting
- * here guarantees SPIF reflects the current transaction.
- */
 static inline void wait_ss_assert(void)
 {
-    while (SPI_PIN & (1 << PIN_SS));    /* loop while /SS is HIGH */
+    while (SPI_PIN & (1 << PIN_SS));
 }
 
-/* Poll until the master releases /SS (end of a transaction). */
 static inline void wait_ss_deassert(void)
 {
-    while (!(SPI_PIN & (1 << PIN_SS))); /* loop while /SS is LOW  */
+    while (!(SPI_PIN & (1 << PIN_SS)));
 }
-
-/* ?? Master API ????????????????????????????????????????????????????? */
 
 void spi_master_init(void)
 {
-    /* MOSI, SCK, /SS -> outputs;  MISO -> input */
     SPI_DDR |=  (1 << PIN_MOSI) | (1 << PIN_SCK) | (1 << PIN_SS);
     SPI_DDR &= ~(1 << PIN_MISO);
 
-    cs_deassert();  /* /SS idle-high before enabling peripheral */
+    cs_deassert();
 
-    /*
-     * SPCR: SPE=1 (enable), MSTR=1 (master), CPOL=0 CPHA=0 (Mode 0)
-     * SPR0=1, SPI2X=0  ->  SCK = F_CPU / 16  (1 MHz at 16 MHz clock)
-     *
-     * Clock rate table:
-     *   SPI2X=0, SPR1=0, SPR0=0  ->  F_CPU/4    (fastest)
-     *   SPI2X=0, SPR1=0, SPR0=1  ->  F_CPU/16
-     *   SPI2X=0, SPR1=1, SPR0=0  ->  F_CPU/64
-     *   SPI2X=0, SPR1=1, SPR0=1  ->  F_CPU/128  (slowest)
-     */
     SPCR0 = (1 << SPE) | (1 << MSTR) | (1 << SPR0);
     SPSR0 &= ~(1 << SPI2X);
 }
@@ -103,7 +48,7 @@ int8_t spi_send_message(const uint8_t *msg, uint8_t len)
     if (len > SPI_MAX_PAYLOAD) return -1;
 
     cs_assert();
-    spi_transfer_byte(len);             /* length prefix */
+    spi_transfer_byte(len);
     for (uint8_t i = 0; i < len; i++)
         spi_transfer_byte(msg[i]);
     cs_deassert();
@@ -113,7 +58,7 @@ int8_t spi_send_message(const uint8_t *msg, uint8_t len)
 
 int8_t spi_receive_response(uint8_t *rx_buf, uint8_t *rx_len)
 {
-    _delay_us(SPI_GUARD_US);            /* let slave load its TX buffer */
+    _delay_us(SPI_GUARD_US);
 
     cs_assert();
 
@@ -139,50 +84,29 @@ int8_t spi_exchange(const uint8_t *tx_msg, uint8_t  tx_len,
     return spi_receive_response(rx_buf, rx_len);
 }
 
-/* ?? Slave API ?????????????????????????????????????????????????????? */
-
 void spi_slave_init(void)
 {
-    /* /SS, MOSI, SCK -> inputs (driven by ESP32 master) */
     SPI_DDR &= ~((1 << PIN_SS) | (1 << PIN_MOSI) | (1 << PIN_SCK));
-    /* MISO -> output (driven by this slave) */
     SPI_DDR |= (1 << PIN_MISO);
 
-    /*
-     * SPCR: SPE=1 (enable), MSTR=0 (slave), CPOL=0 CPHA=0 (Mode 0).
-     * Clock divider bits are ignored in slave mode.
-     * Must match the master's CPOL/CPHA settings.
-     */
     SPCR0 = (1 << SPE);
 
-    SPDR0 = 0x00;    /* pre-load idle value; sent if master clocks before
-                       we've loaded a real response ? benign filler */
+    SPDR0 = 0x00;
 }
 
 int8_t spi_slave_receive(uint8_t *buf, uint8_t *len)
 {
-    wait_ss_assert();                   /* wait for master's TX transaction */
+    wait_ss_assert();
 
-    /*
-     * Discard any SPIF that was set before this SS assertion (e.g. from a
-     * spurious clock during slave initialisation or a prior incomplete
-     * exchange that left SPIF uncleared).
-     *
-     * Safety: at 1 MHz SPI / 16 MHz CPU the first real byte cannot complete
-     * in the ~10 cycles between wait_ss_assert() returning and this check,
-     * so a set SPIF here is guaranteed to be stale, not the incoming length.
-     */
     if (SPSR0 & (1 << SPIF))
         (void)SPDR0;
 
-    /* First byte clocked in is the payload length */
     while (!(SPSR0 & (1 << SPIF)));
     uint8_t incoming_len = SPDR0;
-    SPDR0 = 0x00;                        /* keep sending dummy while receiving */
+    SPDR0 = 0x00;
 
     if (incoming_len > SPI_MAX_PAYLOAD) {
         wait_ss_deassert();
-        /* drain any SPIF that fired while we waited for SS to deassert */
         while (SPSR0 & (1 << SPIF))
             (void)SPDR0;
         *len = 0;
@@ -195,8 +119,7 @@ int8_t spi_slave_receive(uint8_t *buf, uint8_t *len)
         SPDR0 = 0x00;
     }
 
-    wait_ss_deassert();                 /* wait for master to end TX transaction */
-    /* drain any extra SPIF (master sent more bytes than expected) */
+    wait_ss_deassert();
     while (SPSR0 & (1 << SPIF))
         (void)SPDR0;
     *len = incoming_len;
@@ -207,27 +130,21 @@ int8_t spi_slave_send(const uint8_t *buf, uint8_t len)
 {
     if (len > SPI_MAX_PAYLOAD) return -1;
 
-    /*
-     * Pre-load the length byte into SPDR NOW, during the guard delay
-     * window.  The master will clock this out as the first byte of its
-     * RX transaction.  We must write SPDR before /SS falls again.
-     */
     SPDR0 = len;
 
-    wait_ss_assert();                   /* wait for master's RX transaction */
+    wait_ss_assert();
 
-    /* Length byte is being shifted out; master sends a dummy byte */
     while (!(SPSR0 & (1 << SPIF)));
     SPDR0 = (len > 0) ? buf[0] : 0x00;
-    (void)SPDR0;                         /* discard the master's dummy */
+    (void)SPDR0;
 
     for (uint8_t i = 0; i < len; i++) {
-        SPDR0 = buf[i];                  /* load next byte before next clock */
+        SPDR0 = buf[i]; 
         while (!(SPSR0 & (1 << SPIF)));
         (void)SPDR0;
     }
 
     wait_ss_deassert();
-    SPDR0 = 0x00;                        /* restore idle value */
+    SPDR0 = 0x00;
     return 0;
 }

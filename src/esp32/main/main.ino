@@ -8,15 +8,14 @@
 #define PKT_ADDR       0xA2
 
 #define MAX_ROBOTS      2
-#define COLLECT_TIMEOUT 150 /* ms: wait window for sub ESP32 replies */
+#define COLLECT_TIMEOUT 150 
 
-/* 1 length byte + up to MAX_ROBOTS payload bytes + spare */
 #define SPI_BUF_SIZE 66
 
 struct EspPacket {
-    uint8_t type;       /* PKT_CMD or PKT_ADDR */
-    uint8_t robot_addr; /* valid for PKT_ADDR only */
-    uint8_t pad[2];     /* align to 4 bytes */
+    uint8_t type;
+    uint8_t robot_addr;
+    uint8_t pad[2]; 
 };
 
 volatile uint8_t collected[MAX_ROBOTS];
@@ -34,7 +33,6 @@ void setup() {}
 
 void loop() {
 
-    /* ── One-time initialization ── */
     static bool     initialized = false;
     static uint8_t *rx1         = nullptr;
     static uint8_t *tx1         = nullptr;
@@ -45,7 +43,6 @@ void loop() {
     if (!initialized) {
         Serial.begin(115200);
 
-        /* WiFi in station mode (required for ESP-NOW) */
         WiFi.mode(WIFI_STA);
         WiFi.disconnect();
 
@@ -55,7 +52,6 @@ void loop() {
         }
         esp_now_register_recv_cb(onEspNowReceive);
 
-        /* Register broadcast peer */
         esp_now_peer_info_t peer = {};
         memcpy(peer.peer_addr, broadcast, 6);
         peer.channel = 0;
@@ -65,7 +61,6 @@ void loop() {
             while (true) delay(1000);
         }
 
-        /* Allocate DMA-capable SPI buffers (ESP-IDF requirement) */
         rx1 = (uint8_t *)heap_caps_malloc(SPI_BUF_SIZE, MALLOC_CAP_DMA);
         tx1 = (uint8_t *)heap_caps_malloc(SPI_BUF_SIZE, MALLOC_CAP_DMA);
         rx2 = (uint8_t *)heap_caps_malloc(SPI_BUF_SIZE, MALLOC_CAP_DMA);
@@ -75,7 +70,6 @@ void loop() {
             while (true) delay(1000);
         }
 
-        /* Initialize SPI3 (VSPI) as slave */
         spi_bus_config_t buscfg = {};
         buscfg.mosi_io_num   = 17;
         buscfg.miso_io_num   = 33;
@@ -84,8 +78,8 @@ void loop() {
         buscfg.quadhd_io_num = -1;
 
         spi_slave_interface_config_t slvcfg = {};
-        slvcfg.mode         = 0;   /* SPI Mode 0 — matches ATmega */
-        slvcfg.spics_io_num = 5;   /* SS = GPIO5 */
+        slvcfg.mode         = 0;
+        slvcfg.spics_io_num = 5;
         slvcfg.queue_size   = 2;
         slvcfg.flags        = 0;
 
@@ -99,7 +93,7 @@ void loop() {
         Serial.println("[MAIN ESP32] Ready. MAC: " + WiFi.macAddress());
     }
 
-    memset(tx1, 0xFF, SPI_BUF_SIZE); /* MISO don't-care while receiving */
+    memset(tx1, 0xFF, SPI_BUF_SIZE); 
     memset(rx1, 0x00, SPI_BUF_SIZE);
 
     spi_slave_transaction_t trans1 = {};
@@ -112,7 +106,6 @@ void loop() {
     spi_slave_transaction_t *ret1;
     spi_slave_get_trans_result(SPI3_HOST, &ret1, portMAX_DELAY);
 
-    /* Validate: rx1[0] = length byte (expect 1), rx1[1] = command byte */
     if (rx1[0] != 1 || rx1[1] != CMD_START_COLL) {
         Serial.printf("[MAIN ESP32] Unexpected packet: len=0x%02X cmd=0x%02X — ignoring\n",
                       rx1[0], rx1[1]);
@@ -120,7 +113,6 @@ void loop() {
     }
     Serial.println("[MAIN ESP32] CMD_START_COLL received from ATmega");
 
-    // Broadcast cmd with ESPNOW
     collected_count = 0;
     memset((void *)collected, 0, sizeof(collected));
 
@@ -132,10 +124,8 @@ void loop() {
     esp_now_send(broadcast, (uint8_t *)&cmd_pkt, sizeof(cmd_pkt));
     Serial.println("[MAIN ESP32] CMD_START_COLL broadcast via ESP-NOW");
 
-    // Wait for a reply
     delay(COLLECT_TIMEOUT);
 
-    /* Snapshot volatile data once */
     uint8_t snap_count = collected_count;
     uint8_t snap_addrs[MAX_ROBOTS];
     memcpy(snap_addrs, (const void *)collected, snap_count);
@@ -146,10 +136,9 @@ void loop() {
     }
     Serial.println();
 
-    // Send data back to atmega
     tx2[0] = snap_count;
     memcpy(tx2 + 1, snap_addrs, snap_count);
-    memset(tx2 + 1 + snap_count, 0xFF, SPI_BUF_SIZE - 1 - snap_count); /* pad remainder */
+    memset(tx2 + 1 + snap_count, 0xFF, SPI_BUF_SIZE - 1 - snap_count);
     memset(rx2, 0x00, SPI_BUF_SIZE);
 
     spi_slave_transaction_t trans2 = {};
