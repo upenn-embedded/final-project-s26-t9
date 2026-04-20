@@ -34,16 +34,36 @@ int main(void)
         _delay_ms(1000);
         result = spi_receive_response(rx_buf, &rx_len);
         if (result != 0) {
-            printf("[MAIN ATMEGA] ERR: spi recieve failed\r\n");
+            printf("[MAIN ATMEGA] ERR: spi receive failed\r\n");
             continue;
-        } else {
-            uint8_t robot_count = rx_len;
-            printf("[MAIN ATMEGA] Received %u robot(s):", robot_count);
-            for (uint8_t i = 0; i < robot_count; i++)
-                printf(" 0x%02X", rx_buf[i]);
-            printf("\r\n");
         }
 
-        _delay_ms(CYCLE_DELAY_MS);
+        #define NUM_ROBOTS_RECV 2
+        #define NUM_PHT         6
+        #define DATA_LEN        (NUM_ROBOTS_RECV * NUM_PHT * 2)
+
+        uint8_t  robot_count = rx_buf[0];
+        uint8_t *p           = rx_buf + 1;
+
+        for (uint8_t r = 0; r < robot_count; r++)
+        {
+            uint8_t addr = *p++;
+            printf("ROBOT=0x%02X EMITTER=0 ", addr);
+
+            for (uint8_t emitter = 0; emitter < NUM_ROBOTS_RECV; emitter++)
+            {
+                printf("ROBOT=0x%02X EMITTER=%u", addr, emitter);
+
+                for (uint8_t pht = 0; pht < NUM_PHT; pht++)
+                {
+                    uint16_t adc = (uint16_t)p[0] | ((uint16_t)p[1] << 8);
+                    p += 2;
+                    printf(" PHT%u=%u", pht + 1, adc);
+                }
+
+                printf("\r\n");
+            }
+        }
+        printf("---\r\n"); 
     }
 }

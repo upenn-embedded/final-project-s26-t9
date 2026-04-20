@@ -1,108 +1,176 @@
-#include <Arduino.h>
-#include <SPI.h>
-#include <WiFi.h>
-#include <esp_now.h>
+#define F_CPU 8000000UL
 
-#define CMD_START_COLL 0xA1
-#define PKT_CMD        0xA1
-#define PKT_ADDR       0xA2
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdint.h>
+#include "spi_comm.h"
+#include "uart.h"
 
-#define TIME_PER_ESP 50 
+#ifndef ROBOT_ADDRESS
+#  define ROBOT_ADDRESS 1
+#endif
 
-#define SS_PIN       5
-#define SPI_FREQ     100000
-#define SPI_GUARD_US 1000
+#define CMD_START_COLL      0xA1
+#define MS_BETWEEN_COLLECTS 10
+#define NUM_ROBOTS          2
+#define NUM_PHT             6   /* ADC0?ADC5 = PC0?PC5 */
 
-static const SPISettings spi_cfg(SPI_FREQ, MSBFIRST, SPI_MODE0);
+/* ?? Emitter ??????????????????????????????????????????????????????????? */
+#define DDREM  DDRD
+#define DDEM   DD6
+#define PORTEM PORTD
+#define PIN_EM PD6
 
-struct EspPacket {
-    uint8_t type;
-    uint8_t robot_addr;
-    uint8_t pad[2];
-};
+static inline void emitter_on(void)  { PORTEM |=  (1 << PIN_EM); }
+static inline void emitter_off(void) { PORTEM &= ~(1 << PIN_EM); }
 
-volatile bool cmd_received = false;
+/* ?? ADC ??????????????????????????????????????????????????????????????? */
+/*
+ * Single-conversion mode ? free-running (ADATE) cannot switch channels
+ * cleanly because the next conversion starts before ADMUX settles.
+ * We start one conversion per channel and poll ADIF.
+ */
+static void adc_init(void)
+{
+    /* PC0?PC5 as inputs (ADC0?ADC5) */
+    DDRC  &= ~0x3F;
+    PORTC &= ~0x3F; /* no pull-ups on analog pins */
 
-void onEspNowReceive(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
-    if (len < (int)sizeof(EspPacket)) return;
-    const EspPacket *pkt = (const EspPacket *)data;
-    if (pkt->type == PKT_CMD)
-        cmd_received = true;
+    PRR     &= ~(1 << PRADC);  /* power on ADC (PRR0 is just PRR on 328P) */
+
+    /* AVcc reference */
+    ADMUX  =  (1 << REFS0);
+
+    /* Prescaler = 64 -> 125 kHz ADC clock @ 8 MHz (must be 50?200 kHz) */
+    /* ADPS2 and ADPS1 set to 1, ADPS0 to 0 */
+    ADCSRA =  (1 << ADPS1) | (1 << ADPS2);
+
+    /* Disable digital input buffers on ADC0?ADC5 to reduce noise */
+    DIDR0  =  0x3F;
+
+    ADCSRA |= (1 << ADEN);   /* enable ADC ? no ADSC yet, single-shot */
 }
 
-void setup() {
-  static const uint8_t broadcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-  Serial.begin(115200);
+/*
+ * adc_read(ch) ? single conversion on channel ch (0?5).
+ *
+ * Switches ADMUX, starts one conversion, waits for ADIF, returns ADC.
+ * At 125 kHz ADC clock one conversion = 13 cycles = ~104 µs.
+ */
+static uint16_t adc_read(uint8_t ch)
+{
+    /* Select channel ? mask MUX3:0 then set */
+    ADMUX = (ADMUX & 0xF0) | (ch & 0x0F);
 
-  SPI.begin();
-  pinMode(SS_PIN, OUTPUT);
-  digitalWrite(SS_PIN, HIGH);
+    /* Short settle after MUX switch before starting conversion */
+    _delay_us(10);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-
-  if (esp_now_init() != ESP_OK) {
-      Serial.println("[SUB ESP32] ERROR: esp_now_init failed");
-      while (true) delay(1000);
-  }
-  esp_now_register_recv_cb(onEspNowReceive);
-
-  esp_now_peer_info_t peer = {};
-  memcpy(peer.peer_addr, broadcast, 6);
-  peer.channel = 0;
-  peer.encrypt = false;
-  if (esp_now_add_peer(&peer) != ESP_OK) {
-      Serial.println("[SUB ESP32] ERROR: esp_now_add_peer failed");
-      while (true) delay(1000);
-  }
-
-  delay(100);
-  Serial.println("[SUB ESP32] Ready. MAC: " + WiFi.macAddress());
+    ADCSRA |= (1 << ADSC);              /* start single conversion */
+    while (ADCSRA & (1 << ADSC));       /* wait for ADSC to clear */
+    return ADC;
 }
 
-void loop() {
-  static const uint8_t broadcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    if (!cmd_received) return;
-    cmd_received = false;
-    delay(5);
+/* ?? Peripheral init ??????????????????????????????????????????????????? */
+static void Initialize(void)
+{
+    /* Emitter pin ? output, starts OFF */
+    DDREM  |=  (1 << DDEM);
+    PORTEM &= ~(1 << PIN_EM);
 
-    portDISABLE_INTERRUPTS();
+    adc_init();
+}
 
-    SPI.beginTransaction(spi_cfg); // Apply settings!
-    digitalWrite(SS_PIN, LOW);
-    SPI.transfer(1);
-    delayMicroseconds(20);
-    SPI.transfer(CMD_START_COLL);
-    digitalWrite(SS_PIN, HIGH);
-    SPI.endTransaction();
+/* ?? Main ?????????????????????????????????????????????????????????????? */
+int main(void)
+{
+    Initialize();
+    uart_init();
+    spi_slave_init();
 
-    delayMicroseconds(1000);
+    printf("[SUB ATMEGA %u] Ready\r\n", (unsigned)ROBOT_ADDRESS);
 
-    SPI.beginTransaction(spi_cfg);
-    digitalWrite(SS_PIN, LOW);
-    uint8_t len  = SPI.transfer(0x00);
-    delayMicroseconds(20);
-    uint8_t addr = SPI.transfer(0x00);
-    digitalWrite(SS_PIN, HIGH);
-    SPI.endTransaction();
+    uint8_t  rx_buf[SPI_MAX_PAYLOAD];
+    uint8_t  rx_len = 0;
 
-    portENABLE_INTERRUPTS();
+    /*
+     * tx_buf layout: NUM_ROBOTS × NUM_PHT × 2 bytes (little-endian uint16_t)
+     *
+     * tx_buf[curr_addr * NUM_PHT*2 + pht*2 + 0] = ADC low  byte
+     * tx_buf[curr_addr * NUM_PHT*2 + pht*2 + 1] = ADC high byte
+     *
+     * When curr_addr == ROBOT_ADDRESS all 6 slots for that row = 0x0000
+     * (self-emission, cannot receive own IR).
+     *
+     * Total = 2 robots × 6 PHTs × 2 bytes = 24 bytes < SPI_MAX_PAYLOAD.
+     */
+    uint8_t tx_buf[NUM_ROBOTS * NUM_PHT * 2];
 
-    Serial.printf("[SUB ESP32] raw len=0x%02X addr=0x%02X\n", len, addr);
-    if (len != 1) {
-        Serial.printf("[SUB ESP32] Bad resp_len=%u — skipping\n", len);
-        return;
+    while (1)
+    {
+        /* ?? Wait for CMD_START_COLL from Sub ESP32 ?? */
+        if (spi_slave_receive(rx_buf, &rx_len) != 0)
+        {
+            // printf("[SUB ATMEGA %u] ERR: bad receive length\r\n", (unsigned)ROBOT_ADDRESS);
+            continue;
+        }
+
+        if (rx_len != 1 || rx_buf[0] != CMD_START_COLL)
+        {
+            // printf("[SUB ATMEGA %u] ERR: unexpected cmd 0x%02X (len %u)\r\n", (unsigned)ROBOT_ADDRESS, rx_buf[0], rx_len);
+            continue;
+        }
+
+        /* ?? Collection loop ?? */
+        for (uint8_t curr_addr = 0; curr_addr < NUM_ROBOTS; curr_addr++)
+        {
+            uint8_t start = curr_addr * NUM_PHT * 2;
+
+            if (curr_addr == ROBOT_ADDRESS)
+            {
+                /*
+                 * Our turn to emit ? fire emitter, zero out our row.
+                 * We cannot read our own IR return.
+                 */
+                emitter_on();
+                _delay_ms(MS_BETWEEN_COLLECTS);
+                emitter_off();
+
+                for (uint8_t p = 0; p < NUM_PHT; p++) {
+                    tx_buf[start + p*2 + 0] = 0x00;
+                    tx_buf[start + p*2 + 1] = 0x00;
+                }
+            }
+            else
+            {
+                /*
+                 * Another robot is emitting ? sample all 6 PHT channels.
+                 *
+                 * Wait half the slot for the emitter to ramp up and the
+                 * IR to stabilise, then do one ADC sweep across all 6
+                 * channels (6 × ~104 µs ? 624 µs total), then idle out
+                 * the remainder of the slot.
+                 */
+                _delay_ms(MS_BETWEEN_COLLECTS / 2);
+
+                for (uint8_t p = 0; p < NUM_PHT; p++) {
+                    uint16_t val = adc_read(p); /* ADC0=PHT1 ? ADC5=PHT6 */
+                    tx_buf[start + p*2 + 0] = (uint8_t)(val & 0xFF);
+                    tx_buf[start + p*2 + 1] = (uint8_t)(val >> 8);
+                }
+
+                _delay_ms(MS_BETWEEN_COLLECTS / 2);
+            }
+        }
+
+        /*
+         * ?? Send PHT data to Sub ESP32 ??
+         *
+         * No printf before send ? at 115200 baud printf ? 4 ms which
+         * blows past the ESP32's guard delay and corrupts SPDR.
+         */
+        if (spi_slave_send(tx_buf, sizeof(tx_buf)) != 0)
+        {
+             // printf("[SUB ATMEGA %u] ERR: send failed\r\n", (unsigned)ROBOT_ADDRESS);
+        }
     }
-
-    Serial.printf("[SUB ESP32] Got address=0x%02X, staggering %u ms\n",
-                  addr, (unsigned)(addr * TIME_PER_ESP));
-
-    delay((uint32_t)addr * TIME_PER_ESP);
-
-    EspPacket resp;
-    resp.type       = PKT_ADDR;
-    resp.robot_addr = addr;
-    resp.pad[0]     = 0;
-    resp.pad[1]     = 0;
-    esp_now_send(broadcast, (uint8_t *)&resp, sizeof(resp));
 }
