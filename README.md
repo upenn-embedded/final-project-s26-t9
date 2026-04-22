@@ -28,11 +28,11 @@ Given robots at arbitrary starting positions and orientations, our goal is to co
 
 ### 3. System Block Diagram
 
-![img](block_diagram.png)
+![img](assets/block_diagram.png)
 
 ### 4. Design Sketches
 
-![img](design_sketch.png)
+![img](assets/design_sketch.png)
 
 Each robot is triangular, with the ATmega and a prototyping board for electronics mounted on top. The triangle form factor allows three distinct faces, each carrying an interconnect magnet and a metal plate for connection detection with adjacent robots. Short robot legs elevate the body off the floor.
 
@@ -126,11 +126,11 @@ Last week, we ordered parts and finalized the design for the robots to be triang
 
 We are currently building and testing just one robot for the project, and the strength of the vibration motors. We are testing various types of legs like paperclips, sticks, etc. and changing the duty cycle to see how to control it. We also acquired the parts we ordered.
 
-![img](sprint1_0.png)
+![img](assets/sprint1_0.png)
 
-![img](sprint1_1.png)
+![img](assets/sprint1_1.png)
 
-![](sprint1_2.png)
+![](assets/sprint1_2.png)
 
 ### Next week's plan
 
@@ -146,9 +146,9 @@ We designed and 3D printed the robot base and are testing control by attaching t
 
 We are currently working on locomotion and control with placements and speeds of motors and working on adding more robots to the swarm, as well as the pathfinding algorithm.
 
-![img](sprint2_0.png)
+![img](assets/sprint2_0.png)
 
-![img](sprint2_1.png)
+![img](assets/sprint2_1.png)
 
 ### Next week's plan
 
@@ -160,7 +160,7 @@ We will connect the GUI to the robots using the ESP32 and work on inter-robot co
 
 The overall architecture is unchanged from the proposal. The Main ATmega328PB acts as the central controller. It communicates over SPI to a Main ESP32, which broadcasts commands over ESP-NOW to Sub ESP32s (one per robot). Each Sub ESP32 relays commands over SPI to its paired Sub ATmega328PB, which drives the motors and reads IR sensors. Responses travel back up the same chain.
 
-![img](block_diagram.png)
+![img](assets/block_diagram.png)
 
 ### 2. Firmware Implementation
 
@@ -181,15 +181,15 @@ Controls two DC wheel motors via four GPIO outputs (H-bridge style). Implements 
 
 ### 3. Demo
 
-![img](robot.jpeg)
+![img](assets/robot.jpeg)
 
-![img](esp_atmegas.PNG)
+![img](assets/esp_atmegas.PNG)
 
-![img](ir_perfboards.PNG)
+![img](assets/ir_perfboards.PNG)
 
 The 3D-printed triangular robot chassis is complete with legs, wheel motor mounts, and slots for electronics. Each part of the full communication chain (Main ATmega → Main ESP32 → Sub ESP32 → Sub ATmega) is working: the Main ATmega successfully polls and receives robot addresses from both sub-robots. Motor control firmware drives the robot in all four directions using DC wheel motors. IR perfboards with phototransistors and transmitter have been assembled and are next to test.
 
-[Demo video](robot_movement.mov)
+[Demo video](assets/robot_movement.mov)
 
 ### 4. SRS Results
 
