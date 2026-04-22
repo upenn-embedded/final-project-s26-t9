@@ -18,9 +18,10 @@
 #define DDREM  DDRD
 #define DDEM   DD6
 #define PORTEM PORTD
-#define PIN_EM PD6
+#define PIN_EM PD0
 #define CMD_MOVE_DATA       0xB1
 #define MOVE_PAYLOAD_LEN    (NUM_ROBOTS * 4)   /* dir+dist per robot, little-endian */
+#define MOVE_TIME 250
 
 static inline void emitter_on(void)  { PORTEM |=  (1 << PIN_EM); }
 static inline void emitter_off(void) { PORTEM &= ~(1 << PIN_EM); }
@@ -111,7 +112,7 @@ int main(void)
         if (spi_slave_receive(rx_buf, &rx_len) != 0)
             continue;
 
-        /* ── CMD_START_COLL — existing collection logic, unchanged ── */
+        /* ?? CMD_START_COLL ? existing collection logic, unchanged ?? */
         if (rx_len >= 1 && rx_buf[0] == CMD_START_COLL)
         {
             for (uint8_t curr_addr = 0; curr_addr < NUM_ROBOTS; curr_addr++)
@@ -150,7 +151,7 @@ int main(void)
             continue;
         }
 
-        /* ── CMD_MOVE_DATA — extract and print this robot's movement data ── */
+        /* ?? CMD_MOVE_DATA ? extract and print this robot's movement data ?? */
         if (rx_len >= 1 && rx_buf[0] == CMD_MOVE_DATA)
         {
             /*
@@ -170,13 +171,26 @@ int main(void)
             }
 
             uint8_t offset = 1 + (ROBOT_ADDRESS * 4); /* skip cmd byte, seek to our slot */
-            uint16_t dir  = (uint16_t)rx_buf[offset + 0]
-                          | ((uint16_t)rx_buf[offset + 1] << 8);
-            uint16_t dist = (uint16_t)rx_buf[offset + 2]
-                          | ((uint16_t)rx_buf[offset + 3] << 8);
+            int dir  = ((uint16_t)rx_buf[offset + 0]
+                          | ((uint16_t)rx_buf[offset + 1] << 8));
+            int dist = ((uint16_t)rx_buf[offset + 2]
+                          | ((uint16_t)rx_buf[offset + 3] << 8));
 
             printf("[SUB ATMEGA%d] MOVE dir=%u dist=%u\r\n",
                    ROBOT_ADDRESS, dir, dist);
+            
+            int time = MOVE_TIME;
+            // turn towards the right direction
+            // update time based on delay from turn
+            
+            // Move forward or backward
+            if (dir > 0) {
+                move_forward();
+            } else if (dir < 0) {
+                move_backward();
+            }
+            _delay_ms(time);
+            stop_movement();
             continue;
         }
 
