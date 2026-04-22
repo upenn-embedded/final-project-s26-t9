@@ -3,7 +3,15 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <util/delay.h>
-#include "movement.h"
+#include "uart.h"
+
+#define DDRMOTOR DDRD
+#define PORTMOTOR PORTD
+#define MOTOR_SETUP (1 << DDD4) | (1 << DDD5) | (1 << DDD6) | (1 << DDD7);
+#define MOTOR_LEFT_ONE PD4
+#define MOTOR_LEFT_TWO PD5
+#define MOTOR_RIGHT_ONE PD6
+#define MOTOR_RIGHT_TWO PD7
 
 void InitializeMovement(void) {
     DDRC &= ~(1 << DDC0);
@@ -36,66 +44,81 @@ void InitializeMovement(void) {
     // 50% duty cycle
     OCR2B = OCR2A / 2;
     
-    
-    // GPIO input for address reading
-    DDRD &= ~(1 << DDD4);
-    
-    // Outputs for 
-    DDRC |= (1 << DDC0);
-    PORTC &= ~(1 << PORTC0);
-   
-    DDRC |= (1 << DDC1);
-    PORTC &= ~(1 << PORTC1);
-   
-    DDRC |= (1 << DDC2);
-    PORTC &= ~(1 << PORTC2);
-   
-    DDRC |= (1 << DDC3);
-    PORTC &= ~(1 << PORTC3);
-}
-
-void turn_cw() {
-    PORTC |=  (1 << PORTC0);
-    PORTC &= ~(1 << PORTC1);
-    PORTC &= ~(1 << PORTC2);
-    PORTC |=  (1 << PORTC3);
-}
-
-void turn_ccw() {
-    PORTC &= ~(1 << PORTC0);
-    PORTC |=  (1 << PORTC1);
-    PORTC |=  (1 << PORTC2);
-    PORTC &= ~(1 << PORTC3);
-}
-
-void move_forward() {
-    PORTC &= ~(1 << PORTC0);
-    PORTC |=  (1 << PORTC1);
-    PORTC &= ~(1 << PORTC2);
-    PORTC |=  (1 << PORTC3);
+    DDRMOTOR |= MOTOR_SETUP;
 }
 
 void move_backward() {
-    PORTC |=  (1 << PORTC0);
-    PORTC &= ~(1 << PORTC1);
-    PORTC |=  (1 << PORTC2);
-    PORTC &= ~(1 << PORTC3);
+    PORTMOTOR |=  (1 << MOTOR_LEFT_ONE);
+    PORTMOTOR &= ~(1 << MOTOR_LEFT_TWO);
+    PORTMOTOR &= ~(1 << MOTOR_RIGHT_ONE);
+    PORTMOTOR |=  (1 << MOTOR_RIGHT_TWO);
+}
+
+void move_forward() {
+    PORTMOTOR &= ~(1 << MOTOR_LEFT_ONE);
+    PORTMOTOR |=  (1 << MOTOR_LEFT_TWO);
+    PORTMOTOR |=  (1 << MOTOR_RIGHT_ONE);
+    PORTMOTOR &= ~(1 << MOTOR_RIGHT_TWO);
+}
+
+void turn_cw() {
+    PORTMOTOR &= ~(1 << MOTOR_LEFT_ONE);
+    PORTMOTOR |=  (1 << MOTOR_LEFT_TWO);
+    PORTMOTOR &= ~(1 << MOTOR_RIGHT_ONE);
+    PORTMOTOR |=  (1 << MOTOR_RIGHT_TWO);
+}
+
+void turn_ccw() {
+    PORTMOTOR |=  (1 << MOTOR_LEFT_ONE);
+    PORTMOTOR &= ~(1 << MOTOR_LEFT_TWO);
+    PORTMOTOR |=  (1 << MOTOR_RIGHT_ONE);
+    PORTMOTOR &= ~(1 << MOTOR_RIGHT_TWO);
 }
 
 void stop_movement() {
-    PORTC &= ~((1 << PORTC0) | (1 << PORTC1) | (1 << PORTC2) | (1 << PORTC3));
+    PORTMOTOR &= ~((1 << MOTOR_LEFT_ONE) | (1 << MOTOR_LEFT_TWO) | 
+            (1 << MOTOR_RIGHT_ONE) | (1 << MOTOR_RIGHT_TWO));
 }
 
-int main(void) {
-   uart_init();
-   Initialize();
-
-   while (1) {
-       printf("ADC: %d\n", ADC);
-       _delay_ms(50);
-       if (!(PIND & (1 << PD4))) {
-           printf("ON");
-       }
-       // your application logic
-   }
-}
+//int main(void) {
+//   uart_init();
+//   InitializeMovement();
+//
+//   while (1) {
+////        // Coast first
+////        PORTMOTOR &= ~(1 << PORTB1);
+////        PORTMOTOR &= ~(1 << PORTB2);
+////        PORTMOTOR &= ~(1 << PORTB3);
+////        PORTMOTOR &= ~(1 << PORTB4);
+////        _delay_ms(50);
+////
+////        // Forward
+////        PORTMOTOR &= ~(1 << PORTB1);
+////        PORTMOTOR |=  (1 << PORTB2);
+////        PORTMOTOR &= ~(1 << PORTB3);
+////        PORTMOTOR |=  (1 << PORTB4);
+////        _delay_ms(500);
+////
+////        // Coast
+////        PORTMOTOR &= ~(1 << PORTB1);
+////        PORTMOTOR &= ~(1 << PORTB2);
+////        PORTMOTOR &= ~(1 << PORTB3);
+////        PORTMOTOR &= ~(1 << PORTB4);
+////        _delay_ms(50);
+////
+////        // Reverse
+////        PORTMOTOR |=  (1 << PORTB1);
+////        PORTMOTOR &= ~(1 << PORTB2);
+////        PORTMOTOR |=  (1 << PORTB3);
+////        PORTMOTOR &= ~(1 << PORTB4);
+////        _delay_ms(500);
+//       printf("ADC START: %d\n", ADC);
+//       _delay_ms(500);
+////       // your application logic
+////       turn_cw();
+////       _delay_ms(250);
+////       stop_movement();
+////       _delay_ms(1000);
+////       printf("ADC END: %d\n", ADC);
+//   }
+//}
