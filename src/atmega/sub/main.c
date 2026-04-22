@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "spi_comm.h"
 #include "uart.h"
+#include "movement.h"
 
 #ifndef ROBOT_ADDRESS
 #  define ROBOT_ADDRESS 0
@@ -179,18 +180,13 @@ int main(void)
             printf("[SUB ATMEGA%d] MOVE dir=%u dist=%u\r\n",
                    ROBOT_ADDRESS, dir, dist);
             
-            int time = MOVE_TIME;
-            // turn towards the right direction
-            // update time based on delay from turn
-            
-            // Move forward or backward
-            if (dir > 0) {
+            if (dist == 0) {
+                /* no movement commanded this cycle */
+            } else {
                 move_forward();
-            } else if (dir < 0) {
-                move_backward();
+                _delay_ms(MOVE_TIME);
+                stop_movement();
             }
-            _delay_ms(time);
-            stop_movement();
             continue;
         }
 
