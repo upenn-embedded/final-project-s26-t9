@@ -9,12 +9,13 @@
 #define CMD_START_COLL    0xA1
 #define CMD_MOVE_DATA     0xB1
 #define CYCLE_DELAY_MS    200
-#define ADC_DIF_THRESHOLD 20
+#define ADC_DIF_THRESHOLD 0
 #define NUM_ROBOTS_RECV   2
 #define NUM_PHT           6
 #define DATA_LEN          (NUM_ROBOTS_RECV * NUM_PHT * 2)
 
-#define CLOSE_ENOUGH_THRESHOLD 900
+#define CLOSE_ENOUGH_THRESHOLD 300
+
 #define MOVING_ROBOT           1 /* robot 1 moves toward robot 0 */
 #define CENTRAL_ROBOT          0 /* robot 0 stays still */
 
