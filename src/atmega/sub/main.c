@@ -24,6 +24,12 @@
 #define MOVE_PAYLOAD_LEN (NUM_ROBOTS * 4) /* dir+dist per robot, little-endian */
 #define MOVE_TIME        250
 
+static void
+delay_ms_var(uint16_t ms) {
+    while (ms--)
+        _delay_us(1000);
+}
+
 static inline void
 emitter_on(void) {
     PORTEM |= (1 << PIN_EM);
@@ -93,10 +99,10 @@ Initialize(void) {
 int
 main(void) {
     Initialize();
-    uart_init();
+    // uart_init();
     spi_slave_init();
 
-    printf("[SUB ATMEGA %u] Ready\r\n", (unsigned) ROBOT_ADDRESS);
+    // printf("[SUB ATMEGA %u] Ready\r\n", (unsigned) ROBOT_ADDRESS);
 
     uint8_t rx_buf[SPI_MAX_PAYLOAD];
     uint8_t rx_len = 0;
@@ -148,7 +154,7 @@ main(void) {
 
             int size = (unsigned) sizeof(tx_buf);
             spi_slave_send(tx_buf, sizeof(tx_buf));
-            printf("[SUB ATMEGA%d] Collection done, sent %u bytes\r\n", ROBOT_ADDRESS, size);
+            // printf("[SUB ATMEGA%d] Collection done, sent %u bytes\r\n", ROBOT_ADDRESS, size);
             continue;
         }
 
@@ -165,7 +171,7 @@ main(void) {
              */
             uint8_t expected_len = 1 + MOVE_PAYLOAD_LEN; /* cmd + data */
             if (rx_len < expected_len) {
-                printf("[SUB ATMEGA%d] ERR: move payload too short (%u < %u)\r\n", ROBOT_ADDRESS, rx_len, expected_len);
+                // printf("[SUB ATMEGA%d] ERR: move payload too short (%u < %u)\r\n", ROBOT_ADDRESS, rx_len, expected_len);
                 continue;
             }
 
@@ -173,16 +179,18 @@ main(void) {
             int dir = ((uint16_t) rx_buf[offset + 0] | ((uint16_t) rx_buf[offset + 1] << 8));
             int dist = ((uint16_t) rx_buf[offset + 2] | ((uint16_t) rx_buf[offset + 3] << 8));
 
-            printf("[SUB ATMEGA%d] MOVE dir=%u dist=%u\r\n", ROBOT_ADDRESS, dir, dist);
+            // printf("[SUB ATMEGA%d] MOVE dir=%u dist=%u\r\n", ROBOT_ADDRESS, dir, dist);
 
-            int time = 166;
+            int turn_ms = 166;
             if (dir > 0) {
+                if (dist > 0)
+                    turn_ms = dist;
                 if (dir < 3) {
                     turn_cw();
                 } else {
                     turn_ccw();
                 }
-                _delay_ms(time);
+                delay_ms_var(turn_ms);
                 stop_movement();
                 continue;
             }
@@ -194,13 +202,13 @@ main(void) {
                 } else {
                     move_backward();
                 }
-                _delay_ms(time);
+                _delay_ms(166);
                 stop_movement();
             }
             continue;
         }
 
         /* Unknown command */
-        printf("[SUB ATMEGA%d] Unknown cmd 0x%02X len=%u\r\n", ROBOT_ADDRESS, rx_buf[0], rx_len);
+        // printf("[SUB ATMEGA%d] Unknown cmd 0x%02X len=%u\r\n", ROBOT_ADDRESS, rx_buf[0], rx_len);
     }
 }

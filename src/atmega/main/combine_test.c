@@ -18,7 +18,11 @@
 
 #define MIN_DIST_CIRCLE_THRESHOLD 30
 #define MAX_DIST_CIRCLE_THRESHOLD 60
+#define CLOSE_ENOUGH_THRESHOLD    215
 
+#define START_STATE    0
+#define CIRCLE_STATE   1
+#define APPROACH_STATE 2
 /*
  * TARGET_SIDE: PHT index on the central robot to stop at.
  * adj_matrix[CENTRAL_ROBOT][MOVING_ROBOT][1] == TARGET_SIDE means
@@ -31,8 +35,6 @@ typedef struct {
     uint16_t dist;
 } MoveCmd;
 
-typedef enum { ORBIT_START, ORBIT_TURN, ORBIT_MOVE } OrbitPhase;
-
 int
 main(void) {
     uart_init();
@@ -44,9 +46,8 @@ main(void) {
     uint8_t rx_buf[SPI_MAX_PAYLOAD];
     uint8_t rx_len = 0;
 
-    OrbitPhase orbit_phase = ORBIT_START;
+    int curr_state = CIRCLE_STATE;
     int done = 0;
-    int time_since_turn = 0;
 
     while (1) {
         if (spi_send_message(tx_buf, sizeof(tx_buf)) != 0) {
@@ -116,35 +117,84 @@ main(void) {
         uint16_t central_dist = adj_matrix[CENTRAL_ROBOT][MOVING_ROBOT][0];
         uint16_t moving_pht = adj_matrix[MOVING_ROBOT][CENTRAL_ROBOT][1];
 
-        printf("[CIRCLE] central_pht=%u central_dist=%u phase=%s\r\n", central_pht, central_dist, (orbit_phase == ORBIT_TURN) ? "TURN" : "MOVE");
+        printf("[CIRCLE] central_pht=%u central_dist=%u\r\n", central_pht, central_dist);
 
         MoveCmd moves[NUM_ROBOTS_RECV];
         memset(moves, 0, sizeof(moves));
 
-        if (done) {
-            /* Stay still — no-op every cycle */
-        } else if (central_dist != 0 && central_pht == TARGET_SIDE) {
-            printf("[CIRCLE] Reached target side %d! Stopping.\r\n", TARGET_SIDE);
-            done = 1;
-        } else {
-            if (moving_pht != 2) {
-                moves[MOVING_ROBOT].dir = 2;
-                moves[MOVING_ROBOT].dist = 0;
+        if (curr_state == START_STATE) {
+            if (central_dist < MIN_DIST_CIRCLE_THRESHOLD) {
+                if (moving_pht != 0) {
+                    moves[MOVING_ROBOT].dir = moving_pht;
+                    moves[MOVING_ROBOT].dist = 0;
+                } else {
+                    moves[MOVING_ROBOT].dir = 0;
+                    moves[MOVING_ROBOT].dist = 1;
+                }
+            } else if (central_dist > MAX_DIST_CIRCLE_THRESHOLD) {
+                if (moving_pht != 0) {
+                    moves[MOVING_ROBOT].dir = moving_pht;
+                    moves[MOVING_ROBOT].dist = 0;
+                } else {
+                    moves[MOVING_ROBOT].dir = 0;
+                    moves[MOVING_ROBOT].dist = -1;
+                }
             } else {
-                moves[MOVING_ROBOT].dir = -1;
-                moves[MOVING_ROBOT].dist = 1;
+                curr_state = CIRCLE_STATE;
             }
-            // if (orbit_phase == ORBIT_TURN) {
-            //     /* Turn CW 60° (1 PHT step). dir=2 → dir < 3 → turn_cw() in sub */
-            //     moves[MOVING_ROBOT].dir = 2;
-            //     moves[MOVING_ROBOT].dist = 0;
-            //     orbit_phase = ORBIT_MOVE;
-            // } else if (orbit_phase == ORBIT_MOVE) {
-            //     /* Move forward to arc along orbit path */
-            //     moves[MOVING_ROBOT].dir = 0;
-            //     moves[MOVING_ROBOT].dist = 1;
-            //     orbit_phase = ORBIT_TURN;
-            // }
+        }
+
+        if (curr_state == CIRCLE_STATE) {
+            if (central_dist != 0 && central_pht == TARGET_SIDE) {
+                printf("[CIRCLE] Reached target side %d! Stopping.\r\n", TARGET_SIDE);
+                curr_state = APPROACH_STATE;
+            } else {
+                if (moving_pht != 2) {
+                    moves[MOVING_ROBOT].dir = 2;
+                    moves[MOVING_ROBOT].dist = 80;
+                } else {
+                    moves[MOVING_ROBOT].dir = -1;
+                    moves[MOVING_ROBOT].dist = 1;
+                }
+                // if (orbit_phase == ORBIT_TURN) {
+                //     /* Turn CW 60° (1 PHT step). dir=2 → dir < 3 → turn_cw() in sub */
+                //     moves[MOVING_ROBOT].dir = 2;
+                //     moves[MOVING_ROBOT].dist = 0;
+                //     orbit_phase = ORBIT_MOVE;
+                // } else if (orbit_phase == ORBIT_MOVE) {
+                //     /* Move forward to arc along orbit path */
+                //     moves[MOVING_ROBOT].dir = 0;
+                //     moves[MOVING_ROBOT].dist = 1;
+                //     orbit_phase = ORBIT_TURN;
+                // }
+            }
+        } else if (curr_state == APPROACH_STATE) {
+            uint16_t dominant_pht = adj_matrix[MOVING_ROBOT][CENTRAL_ROBOT][1];
+            uint16_t dist_to_target = adj_matrix[MOVING_ROBOT][CENTRAL_ROBOT][0];
+
+            printf("[APPROACH] Robot %d dominant_pht=%u dist=%u\r\n", MOVING_ROBOT, dominant_pht, dist_to_target);
+
+            MoveCmd moves[NUM_ROBOTS_RECV];
+            memset(moves, 0, sizeof(moves));
+
+            if (!done && dist_to_target > CLOSE_ENOUGH_THRESHOLD) {
+                printf("[APPROACH] Docked!\r\n");
+                done = 1;
+            }
+
+            if (!done && dist_to_target > 0) {
+                if (dominant_pht != 3) {
+                    /* Not facing target: send PHT index so sub turns toward it.
+                     * Sub will turn then continue — dist is ignored this cycle. */
+                    moves[MOVING_ROBOT].dir = (dominant_pht + 3) % 6;
+                    moves[MOVING_ROBOT].dist = 0;
+                } else {
+                    /* Already facing target (PHT 0 dominant): move forward.
+                     * dist=1 → forward, dist=-1 (0xFFFF) → backward. */
+                    moves[MOVING_ROBOT].dir = -1;
+                    moves[MOVING_ROBOT].dist = -1;
+                }
+            }
         }
 
         /* moves[CENTRAL_ROBOT] stays zero — central robot does not move */
