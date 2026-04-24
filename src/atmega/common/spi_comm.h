@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 /* Maximum payload bytes (excluding the 1-byte length prefix). */
-#define SPI_MAX_PAYLOAD  64
+#define SPI_MAX_PAYLOAD 200
 
 /* ── Master API ────────────────────────────────────────────────────── */
 
@@ -41,8 +41,7 @@ int8_t spi_receive_response(uint8_t *rx_buf, uint8_t *rx_len);
  * Convenience: spi_send_message then spi_receive_response in one call.
  * Returns 0 on success, -1 on any error.
  */
-int8_t spi_exchange(const uint8_t *tx_msg, uint8_t  tx_len,
-                          uint8_t *rx_buf, uint8_t *rx_len);
+int8_t spi_exchange(const uint8_t *tx_msg, uint8_t tx_len, uint8_t *rx_buf, uint8_t *rx_len);
 
 /* ── Slave API ─────────────────────────────────────────────────────── */
 

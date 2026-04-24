@@ -10,14 +10,11 @@
 #define CMD_MOVE_DATA     0xB1
 #define CYCLE_DELAY_MS    200
 #define ADC_DIF_THRESHOLD 0
-#define NUM_ROBOTS_RECV   2
+#define NUM_ROBOTS_RECV   4
 #define NUM_PHT           6
 #define DATA_LEN          (NUM_ROBOTS_RECV * NUM_PHT * 2)
 
 #define CLOSE_ENOUGH_THRESHOLD 215
-
-#define MOVING_ROBOT  1 /* robot 1 moves toward robot 0 */
-#define CENTRAL_ROBOT 0 /* robot 0 stays still */
 
 typedef struct {
     uint16_t dir;
@@ -35,7 +32,9 @@ main(void) {
     uint8_t rx_buf[SPI_MAX_PAYLOAD];
     uint8_t rx_len = 0;
 
-    int docked = 0;
+    int docked[] = {1, 0, 0, 0};
+
+    int central_robot = 0;
 
     while (1) {
         if (spi_send_message(tx_buf, sizeof(tx_buf)) != 0) {
@@ -100,30 +99,30 @@ main(void) {
         }
         printf("---\r\n");
 
-        uint16_t dominant_pht = adj_matrix[MOVING_ROBOT][CENTRAL_ROBOT][1];
-        uint16_t dist_to_target = adj_matrix[MOVING_ROBOT][CENTRAL_ROBOT][0];
-
-        printf("[APPROACH] Robot %d dominant_pht=%u dist=%u\r\n", MOVING_ROBOT, dominant_pht, dist_to_target);
-
         MoveCmd moves[NUM_ROBOTS_RECV];
         memset(moves, 0, sizeof(moves));
 
-        if (!docked && dist_to_target > CLOSE_ENOUGH_THRESHOLD) {
-            printf("[APPROACH] Docked!\r\n");
-            docked = 1;
-        }
+        for (int curr_robot = 0; curr_robot < NUM_ROBOTS_RECV; curr_robot++) {
+            uint16_t dominant_pht = adj_matrix[curr_robot][central_robot[1];
+            uint16_t dist_to_target = adj_matrix[curr_robot][central_robot][0];
 
-        if (!docked && dist_to_target > 0) {
-            if (dominant_pht != 3) {
-                /* Not facing target: send PHT index so sub turns toward it.
-                 * Sub will turn then continue — dist is ignored this cycle. */
-                moves[MOVING_ROBOT].dir = (dominant_pht + 3) % 6;
-                moves[MOVING_ROBOT].dist = 0;
-            } else {
-                /* Already facing target (PHT 0 dominant): move forward.
-                 * dist=1 → forward, dist=-1 (0xFFFF) → backward. */
-                moves[MOVING_ROBOT].dir = -1;
-                moves[MOVING_ROBOT].dist = -1;
+            if (!docked[curr_robot] && dist_to_target > CLOSE_ENOUGH_THRESHOLD) {
+                printf("[APPROACH] Docked!\r\n");
+                docked[curr_robot] = 1;
+            }
+
+            if (!docked[curr_robot] && dist_to_target > 0) {
+                if (dominant_pht != 3) {
+                    /* Not facing target: send PHT index so sub turns toward it.
+                     * Sub will turn then continue — dist is ignored this cycle. */
+                    moves[curr_robot].dir = (dominant_pht + 3) % 6;
+                    moves[curr_robot].dist = 0;
+                } else {
+                    /* Already facing target (PHT 0 dominant): move forward.
+                     * dist=1 → forward, dist=-1 (0xFFFF) → backward. */
+                    moves[curr_robot].dir = -1;
+                    moves[curr_robot].dist = -1;
+                }
             }
         }
         /* moves[CENTRAL_ROBOT] stays zero — robot 0 does not move */
