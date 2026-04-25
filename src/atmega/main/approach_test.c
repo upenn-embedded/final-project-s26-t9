@@ -32,9 +32,9 @@ main(void) {
     uint8_t rx_buf[SPI_MAX_PAYLOAD];
     uint8_t rx_len = 0;
 
-    int docked[] = {1, 0, 0, 0};
+    int docked[] = {0, 0, 1, 0};
 
-    int central_robot = 0;
+    int central_robot = 2;
 
     while (1) {
         if (spi_send_message(tx_buf, sizeof(tx_buf)) != 0) {

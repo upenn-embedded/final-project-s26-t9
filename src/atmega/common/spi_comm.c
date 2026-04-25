@@ -134,15 +134,13 @@ int8_t spi_slave_send(const uint8_t *buf, uint8_t len)
 
     wait_ss_assert();
 
-    while (!(SPSR0 & (1 << SPIF)));
-    SPDR0 = (len > 0) ? buf[0] : 0x00;
-    (void)SPDR0;
-
     for (uint8_t i = 0; i < len; i++) {
-        SPDR0 = buf[i]; 
         while (!(SPSR0 & (1 << SPIF)));
+        SPDR0 = buf[i];
         (void)SPDR0;
     }
+    while (!(SPSR0 & (1 << SPIF)));
+    (void)SPDR0;
 
     wait_ss_deassert();
     SPDR0 = 0x00;

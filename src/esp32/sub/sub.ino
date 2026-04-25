@@ -21,7 +21,7 @@
 #define TIME_PER_ESP 50
 #define SS_PIN       5
 #define SPI_FREQ     1000000
-#define SPI_GUARD_MS 30
+#define SPI_GUARD_MS 50
 
 static const SPISettings spi_cfg(SPI_FREQ, MSBFIRST, SPI_MODE0);
 
