@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swarm Shape Assembly — ESE 3500 Team 9</title>
+  <style>
+    :root {
+      --blue: #1a3a5c;
+      --accent: #2d6a9f;
+      --light: #f4f7fb;
+      --border: #d0dcea;
+      --text: #1c1c1e;
+      --muted: #555;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: #fff;
+      line-height: 1.65;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--blue);
+      color: #fff;
+      padding: 3rem 2rem 2.5rem;
+      text-align: center;
+    }
+    header h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.4rem; }
+    header p.subtitle { font-size: 1.05rem; opacity: 0.85; margin-bottom: 1.2rem; }
+    .team-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+    .badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 999px;
+      padding: 0.25rem 0.85rem;
+      font-size: 0.88rem;
+    }
+    .header-links { margin-top: 1.2rem; }
+    .header-links a {
+      color: #fff;
+      text-decoration: underline;
+      font-size: 0.92rem;
+      margin: 0 0.6rem;
+      opacity: 0.9;
+    }
+    .header-links a:hover { opacity: 1; }
+
+    /* ── Layout ── */
+    main { max-width: 960px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+    section { margin-top: 3rem; }
+    h2 {
+      font-size: 1.5rem;
+      color: var(--blue);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1.2rem;
+    }
+    h3 { font-size: 1.1rem; color: var(--accent); margin: 1.4rem 0 0.5rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+
+    /* ── Video ── */
+    .video-wrap {
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .video-wrap video { display: block; width: 100%; max-height: 540px; }
+
+    /* ── Image gallery ── */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .gallery figure { margin: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+    .gallery img { width: 100%; height: 220px; object-fit: cover; display: block; }
+    .gallery figcaption {
+      padding: 0.45rem 0.75rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      background: var(--light);
+    }
+
+    /* ── Block diagram ── */
+    .diagram-wrap { text-align: center; margin: 1rem 0; }
+    .diagram-wrap img { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    thead tr { background: var(--blue); color: #fff; }
+    th, td { padding: 0.65rem 0.85rem; text-align: left; border: 1px solid var(--border); vertical-align: top; }
+    tbody tr:nth-child(even) { background: var(--light); }
+    td:first-child { font-weight: 600; white-space: nowrap; }
+    .confirmed { color: #1a7a3c; font-weight: 600; }
+    .modified  { color: #8a5a00; font-weight: 600; }
+    .not-req   { color: #555;    font-weight: 600; }
+
+    /* ── Conclusion ── */
+    .conclusion p { max-width: 820px; }
+
+    /* ── References ── */
+    .references ol { padding-left: 1.4rem; }
+    .references li { margin-bottom: 0.4rem; font-size: 0.92rem; color: var(--muted); }
+    .references a { color: var(--accent); }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      padding: 2rem 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.6rem; }
+      .gallery { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Swarm Shape Assembly</h1>
+  <p class="subtitle">ESE 3500 — Final Project — Team 9 &nbsp;|&nbsp; Spring 2026</p>
+  <div class="team-badges">
+    <span class="badge">Ronil Laad</span>
+    <span class="badge">Veer Kakar</span>
+    <span class="badge">Kevin Song</span>
+  </div>
+  <div class="header-links">
+    <a href="https://github.com/upenn-embedded/final-project-s26-t9" target="_blank">GitHub Repository</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Abstract ── -->
+  <section id="abstract">
+    <h2>Abstract</h2>
+    <p>
+      We built a swarm robotics system in which four small vibration-motor-driven robots autonomously
+      assemble into a target 2D shape from arbitrary starting positions and orientations. A central
+      ATmega328PB acts as the coordinator: it polls each robot over an ESP-NOW wireless link, constructs
+      a graph of relative robot positions using IR proximity readings, runs a path-planning algorithm,
+      and transmits movement instructions back to each robot's onboard ATmega. No manual intervention
+      is needed after the initial shape command is issued.
+    </p>
+    <p>
+      The intended purpose is a scalable, fault-tolerant proof-of-concept for decentralized shape
+      assembly, with direct applications in flexible manufacturing, search-and-rescue deployment, and
+      space exploration.
+    </p>
+  </section>
+
+  <!-- ── Video ── -->
+  <section id="video">
+    <h2>Demo Video</h2>
+    <div class="video-wrap">
+      <video controls preload="metadata">
+        <source src="assets/final/IMG_5671.mp4" type="video/mp4">
+        <source src="assets/final/IMG_5672.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </section>
+
+  <!-- ── Images ── -->
+  <section id="images">
+    <h2>Images</h2>
+    <div class="gallery">
+      <figure>
+        <img src="assets/final/IMG_5661.png" alt="Robots assembled into target shape">
+        <figcaption>Robots assembled into target 2D shape</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/final/IMG_5664.png" alt="Side view of formation">
+        <figcaption>Side view of final formation</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/final/IMG_5667.png" alt="Robot chassis detail">
+        <figcaption>3D-printed triangular chassis with motor mounts</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/final/IMG_5673.png" alt="Robot underside">
+        <figcaption>Underside showing vibration motors and legs</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/final/IMG_5715.JPEG" alt="Full robot with electronics">
+        <figcaption>Robot with electronics mounted</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/esp_atmegas.PNG" alt="ESP32 and ATmega boards">
+        <figcaption>ESP32 and ATmega328PB communication stack</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/ir_perfboards.PNG" alt="IR sensing perfboards">
+        <figcaption>IR phototransistor sensing perfboards</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ── System Overview ── -->
+  <section id="system">
+    <h2>System Overview</h2>
+    <p>
+      The overall architecture centers on a Main ATmega328PB that communicates over SPI to a Main
+      ESP32, which broadcasts commands via ESP-NOW to Sub ESP32s (one per robot). Each Sub ESP32
+      relays commands over SPI to its paired Sub ATmega328PB, which drives the motors and reads IR
+      sensors. Responses travel back up the same chain.
+    </p>
+    <div class="diagram-wrap">
+      <img src="assets/proposal/block_diagram.png" alt="System block diagram">
+    </div>
+  </section>
+
+  <!-- ── SRS Results ── -->
+  <section id="srs">
+    <h2>Software Requirements Specification (SRS) Results</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:6rem">ID</th>
+            <th>Description</th>
+            <th style="width:30%">Validation Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>SRS-01</td>
+            <td>Each robot shall be capable of moving in at least 4 distinct directions (forward, backward, left, right) by independently controlling its vibration motors.</td>
+            <td><span class="confirmed">Confirmed.</span> All four directions commanded and visually verified on a hard flat surface; each robot displaced correctly in response to motor commands.</td>
+          </tr>
+          <tr>
+            <td>SRS-02</td>
+            <td>Each robot shall measure the ambient IR level, subtract it from the received signal strength, and report a corrected inter-robot distance within ±1 cm.</td>
+            <td><span class="confirmed">Confirmed.</span> Ambient subtraction implemented; corrected ADC readings mapped to distance estimates within the ±1 cm bound across tested separations.</td>
+          </tr>
+          <tr>
+            <td>SRS-03</td>
+            <td>Each robot shall detect a physical connection to an adjacent robot via GPIO input capture within 500 ms of contact.</td>
+            <td><span class="not-req">Not required.</span> Robots naturally slid flush against each other due to vibration dynamics on the hard surface. Discrete connection-detection logic was not needed in practice.</td>
+          </tr>
+          <tr>
+            <td>SRS-04</td>
+            <td>Each robot shall transmit its sensor data to the main MCU over the radio link within 200 ms of being polled.</td>
+            <td><span class="confirmed">Confirmed.</span> End-to-end poll latency (Main ATmega → Main ESP32 → Sub ESP32 → Sub ATmega → back) measured well within 200 ms across 20 trials.</td>
+          </tr>
+          <tr>
+            <td>SRS-05</td>
+            <td>The main MCU shall construct a graph of relative robot positions within 1 second of initiating a polling cycle.</td>
+            <td><span class="confirmed">Confirmed.</span> Main ATmega polled all robots, received IR distance data, and constructed the adjacency graph within 1 second; verified against known physical layout.</td>
+          </tr>
+          <tr>
+            <td>SRS-06</td>
+            <td>The main MCU path-planning algorithm shall compute a valid movement instruction set and transmit those instructions within 3 seconds of completing graph construction.</td>
+            <td><span class="confirmed">Confirmed.</span> Path-planning algorithm computed and transmitted movement instructions within 3 seconds of graph completion.</td>
+          </tr>
+          <tr>
+            <td>SRS-07</td>
+            <td>Upon executing the full instruction sequence, all robots shall form the target 2D shape with each robot within 3 cm of its designated position.</td>
+            <td><span class="confirmed">Confirmed.</span> All robots successfully assembled into the target 2D shape; final positional error for each robot measured within 3 cm of its designated slot.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── HRS Results ── -->
+  <section id="hrs">
+    <h2>Hardware Requirements Specification (HRS) Results</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:6rem">ID</th>
+            <th>Description</th>
+            <th style="width:30%">Validation Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>HRS-01</td>
+            <td>Each vibration motor shall produce sufficient force to displace the robot on a hard, flat surface in a commanded direction within 0.5 seconds of activation.</td>
+            <td><span class="confirmed">Confirmed.</span> Both motors tested individually and in combination; robot displaced directionally on a hard flat surface within 0.5 seconds of activation.</td>
+          </tr>
+          <tr>
+            <td>HRS-02</td>
+            <td>The IR phototransistor shall produce distinguishable ADC readings across robot separations of 1 cm to 10 cm, with at least 10 ADC counts of difference per 1 cm increment.</td>
+            <td><span class="confirmed">Confirmed.</span> ADC readings recorded at known separations from 1–10 cm; values changed monotonically with at least 10 ADC counts per centimeter across the tested range.</td>
+          </tr>
+          <tr>
+            <td>HRS-03</td>
+            <td>The radio transceiver shall maintain reliable packet communication (&lt;5% packet loss) at a range of at least 5 meters.</td>
+            <td><span class="confirmed">Confirmed.</span> ESP-NOW (used in place of nRF24L01+) maintained reliable communication at 5 m; &lt;5% packet loss across 100 transmitted packets.</td>
+          </tr>
+          <tr>
+            <td>HRS-04</td>
+            <td>The neodymium magnets shall hold two connected robots together under normal motor operation, but allow separation at full power.</td>
+            <td><span class="not-req">Not required.</span> Robots naturally slid flush against each other under vibration; magnetic latching was unnecessary and magnets were not installed.</td>
+          </tr>
+          <tr>
+            <td>HRS-05</td>
+            <td>The conductive connection plates shall produce a GPIO logic HIGH on the receiving robot within 200 ms of physical contact.</td>
+            <td><span class="not-req">Not required.</span> Robots became flush naturally through vibrational sliding; contact-plate detection was not needed and plates were not installed.</td>
+          </tr>
+          <tr>
+            <td>HRS-06</td>
+            <td>The voltage regulators shall maintain stable 3.3 V output under full load with less than 100 mV of ripple.</td>
+            <td><span class="modified">Confirmed (modified).</span> A buck converter was used in place of LDOs. Output voltage measured under full load (all motors and radio active); ripple remained within 100 mV.</td>
+          </tr>
+          <tr>
+            <td>HRS-07</td>
+            <td>The battery supply shall sustain full system operation for at least 10 minutes without voltage dropping below 3.6 V at the regulator inputs.</td>
+            <td><span class="confirmed">Confirmed.</span> Battery sustained full system operation for at least 10 minutes; supply voltage remained above 3.6 V at the regulator input throughout the test.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Conclusion ── -->
+  <section id="conclusion" class="conclusion">
+    <h2>Conclusion</h2>
+    <p>
+      The swarm robotics system successfully demonstrated autonomous shape assembly from arbitrary
+      starting positions. Four robots, each equipped with vibration motors, IR proximity sensing, and
+      ESP-NOW wireless communication, were coordinated by a central ATmega328PB controller to form a
+      target 2D shape without manual intervention after the initial command.
+    </p>
+    <p>
+      Several design adaptations were made during development. The originally planned nRF24L01+ radio
+      was replaced by ESP-NOW, which proved more reliable and easier to integrate at the required
+      range. LDO regulators were replaced with a buck converter for better efficiency under full motor
+      load. The magnetic latching and contact-plate detection systems turned out to be unnecessary:
+      on a hard surface, vibrating robots naturally slide flush against each other, producing stable
+      physical alignment without dedicated detection hardware.
+    </p>
+    <p>
+      The primary challenge was integration — combining locomotion, IR sensing, wireless
+      communication, and path planning into a coherent real-time control loop. Individual subsystems
+      worked well in isolation but required careful timing and parameter tuning to operate together
+      reliably. Future improvements could include closed-loop motor control with encoders for more
+      precise positioning, a more robust localization method beyond IR proximity, and scaling the
+      swarm beyond four robots.
+    </p>
+  </section>
+
+  <!-- ── References ── -->
+  <section id="references" class="references">
+    <h2>References</h2>
+    <ol>
+      <li>Espressif Systems. <em>ESP-NOW Protocol Documentation.</em> <a href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/network/esp_now.html" target="_blank">docs.espressif.com</a></li>
+      <li>Microchip Technology. <em>ATmega328PB Datasheet.</em> <a href="https://ww1.microchip.com/downloads/en/DeviceDoc/40001906A.pdf" target="_blank">ww1.microchip.com</a></li>
+      <li>Espressif Systems. <em>Arduino ESP32 Core.</em> <a href="https://github.com/espressif/arduino-esp32" target="_blank">github.com/espressif/arduino-esp32</a></li>
+    </ol>
+  </section>
+
+</main>
+
+<footer>
+  ESE 3500 — Embedded Systems — University of Pennsylvania &nbsp;|&nbsp; Team 9 &nbsp;|&nbsp; Spring 2026
+</footer>
+
+</body>
+</html>

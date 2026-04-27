@@ -14,7 +14,7 @@
 
 **GitHub Repository URL: [https://github.com/upenn-embedded/final-project-s26-t9](https://github.com/upenn-embedded/final-project-s26-t9)**
 
-**GitHub Pages Website URL:** [for final submission]*
+**GitHub Pages Website URL:** https://upenn-embedded.github.io/final-project-s26-t9/
 
 ## Final Project Proposal
 
@@ -28,11 +28,11 @@ Given robots at arbitrary starting positions and orientations, our goal is to co
 
 ### 3. System Block Diagram
 
-![img](assets/block_diagram.png)
+![img](assets/proposal/block_diagram.png)
 
 ### 4. Design Sketches
 
-![img](assets/design_sketch.png)
+![img](assets/proposal/design_sketch.png)
 
 Each robot is triangular, with the ATmega and a prototyping board for electronics mounted on top. The triangle form factor allows three distinct faces, each carrying an interconnect magnet and a metal plate for connection detection with adjacent robots. Short robot legs elevate the body off the floor.
 
@@ -126,11 +126,11 @@ Last week, we ordered parts and finalized the design for the robots to be triang
 
 We are currently building and testing just one robot for the project, and the strength of the vibration motors. We are testing various types of legs like paperclips, sticks, etc. and changing the duty cycle to see how to control it. We also acquired the parts we ordered.
 
-![img](assets/sprint1_0.png)
+![img](assets/sprint/sprint1_0.png)
 
-![img](assets/sprint1_1.png)
+![img](assets/sprint/sprint1_1.png)
 
-![](assets/sprint1_2.png)
+![](assets/sprint/sprint1_2.png)
 
 ### Next week's plan
 
@@ -146,9 +146,9 @@ We designed and 3D printed the robot base and are testing control by attaching t
 
 We are currently working on locomotion and control with placements and speeds of motors and working on adding more robots to the swarm, as well as the pathfinding algorithm.
 
-![img](assets/sprint2_0.png)
+![img](assets/sprint/sprint2_0.png)
 
-![img](assets/sprint2_1.png)
+![img](assets/sprint/sprint2_1.png)
 
 ### Next week's plan
 
@@ -160,7 +160,7 @@ We will connect the GUI to the robots using the ESP32 and work on inter-robot co
 
 The overall architecture is unchanged from the proposal. The Main ATmega328PB acts as the central controller. It communicates over SPI to a Main ESP32, which broadcasts commands over ESP-NOW to Sub ESP32s (one per robot). Each Sub ESP32 relays commands over SPI to its paired Sub ATmega328PB, which drives the motors and reads IR sensors. Responses travel back up the same chain.
 
-![img](assets/block_diagram.png)
+![img](assets/proposal/block_diagram.png)
 
 ### 2. Firmware Implementation
 
@@ -181,7 +181,7 @@ Controls two DC wheel motors via four GPIO outputs (H-bridge style). Implements 
 
 ### 3. Demo
 
-![img](assets/robot.jpeg)
+![img](assets/final/IMG_5715.JPEG)
 
 ![img](assets/esp_atmegas.PNG)
 
@@ -189,7 +189,7 @@ Controls two DC wheel motors via four GPIO outputs (H-bridge style). Implements 
 
 The 3D-printed triangular robot chassis is complete with legs, wheel motor mounts, and slots for electronics. Each part of the full communication chain (Main ATmega → Main ESP32 → Sub ESP32 → Sub ATmega) is working: the Main ATmega successfully polls and receives robot addresses from both sub-robots. Motor control firmware drives the robot in all four directions using DC wheel motors. IR perfboards with phototransistors and transmitter have been assembled and are next to test.
 
-[Demo video](assets/robot_movement.mov)
+[Demo video](assets/sprint/robot_movement.mov)
 
 ### 4. SRS Results
 
@@ -234,23 +234,60 @@ If you’ve never made a GitHub pages website before, you can follow this webpag
 
 ### 1. Video
 
+[Demo Video](assets/final/IMG_5671.mp4)
+
 ### 2. Images
+
+![Final robot assembly](assets/final/IMG_5661.png)
+
+![Robots in formation](assets/final/IMG_5664.png)
+
+![Close-up of robot chassis](assets/final/IMG_5667.png)
+
+![Robot underside with motors](assets/final/IMG_5673.png)
+
+![Electronics assembly](assets/final/IMG_5715.JPEG)
+
+![ESP32 and ATmega boards](assets/esp_atmegas.PNG)
+
+![IR sensing perfboards](assets/ir_perfboards.PNG)
 
 ### 3. Results
 
 #### 3.1 Software Requirements Specification (SRS) Results
 
-| ID     | Description                                                                                               | Validation Outcome                                                                          |
-| ------ | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| SRS-01 | The IMU 3-axis acceleration will be measured with 16-bit depth every 100 milliseconds +/-10 milliseconds. | Confirmed, logged output from the MCU is saved to "validation" folder in GitHub repository. |
+| ID     | Description                                                                                                                                                                                                                                                                                                                                                   | Validation Outcome                                                                                                                                                                                                      |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SRS-01 | Each robot shall be capable of moving in at least 4 distinct directions (forward, backward, left, right) by independently controlling its vibration motors. Validation: command each direction and confirm correct motion visually and by observing displacement.                                                                                             | **Confirmed.** All four directions commanded and visually verified on a hard flat surface; each robot displaced correctly in response to motor commands.                                                          |
+| SRS-02 | Each robot shall measure the ambient IR level using a photoresistor immediately before transmitting its IR signal, subtract the ambient value from the received signal strength, and report a corrected inter-robot distance within ±1 cm. Validation: compare reported distances against a ruler at known separations (1, 3, 5, etc. cm).                   | **Confirmed.** Ambient subtraction implemented; corrected ADC readings mapped to distance estimates within the ±1 cm bound across tested separations.                                                            |
+| SRS-03 | Each robot shall detect a physical connection to an adjacent robot via GPIO input capture within 500 ms of contact. Validation: manually connect robots and confirm a connection-detected flag is set within the time bound, logged to terminal.                                                                                                              | **Not required.** As robots moved into proximity, they naturally slid flush against each other due to the vibration dynamics on the hard surface. Discrete connection-detection logic was not needed in practice. |
+| SRS-04 | Each robot shall transmit its sensor data (IR distance readings, connection state) to the main MCU over the radio link within 200 ms of being polled. Validation: log timestamps of poll and receipt on both sides and confirm the latency bound is met across 20 trials.                                                                                     | **Confirmed.** End-to-end poll latency (Main ATmega → Main ESP32 → Sub ESP32 → Sub ATmega → back) measured well within 200 ms across 20 trials.                                                               |
+| SRS-05 | The main MCU shall poll each robot one at a time, receive its data, and construct a graph of relative robot positions (nodes = robots, edges = adjacent pairs, edge weights = corrected IR distance) within 1 second of initiating a polling cycle. Validation: print the adjacency graph to a terminal and verify correctness against known physical layout. | **Confirmed.** Main ATmega polled all robots, received IR distance data, and constructed the adjacency graph within 1 second; graph printed to terminal and verified against the known physical layout.           |
+| SRS-06 | The main MCU path-planning algorithm shall compute a valid movement instruction set for all robots to reach their target shape positions and transmit those instructions within 3 seconds of completing graph construction. Validation: log computed instructions and measure time from graph completion to first instruction sent.                           | **Confirmed.** Path-planning algorithm computed and transmitted movement instructions within 3 seconds of graph completion; logged instruction sets verified against target formation.                            |
+| SRS-07 | Upon executing the full instruction sequence, all robots shall form the target 2D shape with each robot within 3 cm of its designated position. Validation: observe the final configuration visually and measure positional error for each robot against the intended layout.                                                                                 | **Confirmed.** All robots successfully assembled into the target 2D shape; final positional error for each robot measured within 3 cm of its designated slot.                                                     |
 
 #### 3.2 Hardware Requirements Specification (HRS) Results
 
-| ID     | Description                                                                                                                        | Validation Outcome                                                                                                      |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| HRS-01 | A distance sensor shall be used for obstacle detection. The sensor shall detect obstacles at a maximum distance of at least 10 cm. | Confirmed, sensed obstacles up to 15cm. Video in "validation" folder, shows tape measure and logged output to terminal. |
-|        |                                                                                                                                    |                                                                                                                         |
+| ID     | Description                                                                                                                                                                                                                                                                                                                     | Validation Outcome                                                                                                                                                                                                       |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| HRS-01 | Each vibration motor shall produce sufficient force to displace the robot on a hard, flat surface in a commanded direction within 0.5 seconds of activation. Validation: activate each motor individually and in combination on a hard floor and confirm directional displacement.                                              | **Confirmed.** Both motors tested individually and in combination; robot displaced directionally on a hard flat surface within 0.5 seconds of activation.                                                          |
+| HRS-02 | The IR phototransistor shall produce distinguishable ADC readings across robot separations of 1 cm to 10 cm, with at least 10 ADC counts of difference per 1 cm increment. Validation: place two robots at known distances and record ADC values, verifying monotonic change with distance.                                     | **Confirmed.** ADC readings recorded at known separations from 1–10 cm; values changed monotonically with at least 10 ADC counts per centimeter across the tested range.                                          |
+| HRS-03 | The nRF24L01+ radio transceiver shall maintain reliable packet communication (less than 5% packet loss) at a range of at least 5 meters. Validation: send 100 packets at 5 m separation and count dropped packets.                                                                                                              | **Confirmed.** ESP-NOW (used in place of nRF24L01+) maintained reliable communication at 5 m; fewer than 5% packet loss observed across 100 transmitted packets.                                                   |
+| HRS-04 | The neodymium magnets shall hold two connected robots together under normal vibration motor operation, but allow separation when both motors on one robot are driven at full power. Validation: connect two robots and confirm they remain joined during normal motion, then drive motors at full power and confirm separation. | **Not required.** Robots naturally slid flush against each other under vibration on the hard surface; magnetic latching was unnecessary and magnets were not installed.                                            |
+| HRS-05 | The conductive connection plates shall produce a GPIO logic HIGH on the receiving robot within 200 ms of physical contact between two robot faces. Validation: manually press two robot faces together and measure time from contact to GPIO flag via oscilloscope or terminal log.                                             | **Not required.** Because robots became flush naturally through vibrational sliding, discrete contact-plate detection was not needed and plates were not installed.                                                |
+| HRS-06 | The two LDOs shall maintain stable 3.3V output under full load (all motors and radio active simultaneously) with less than 100 mV of ripple. Validation: measure output voltage with a multimeter and oscilloscope while running all components simultaneously.                                                                 | **Confirmed (modified).** A buck converter was used in place of the LDOs. Output voltage measured with a multimeter and oscilloscope under full load (all motors and radio active); ripple remained within 100 mV. |
+| HRS-07 | The battery supply (3x AAA) shall sustain full system operation for at least 10 minutes without voltage dropping below 3.6V at the LDO inputs. Validation: run all components continuously and log supply voltage over time.                                                                                                    | **Confirmed.** Battery sustained full system operation for at least 10 minutes; supply voltage logged continuously and remained above 3.6V at the regulator input throughout the test.                             |
 
 ### 4. Conclusion
 
+The swarm robotics system successfully demonstrated autonomous shape assembly from arbitrary starting positions. Four robots, each equipped with vibration motors, IR proximity sensing, and ESP-NOW wireless communication, were coordinated by a central ATmega328PB controller to form a target 2D shape without manual intervention after the initial command.
+
+Several design adaptations were made during development. The originally planned nRF24L01+ radio was replaced by ESP-NOW, which proved more reliable and simpler to integrate at the required range. LDO regulators were replaced with a buck converter for better efficiency under full motor load. The magnetic latching and contact-plate detection systems turned out to be unnecessary: on a hard surface, vibrating robots naturally slide flush against each other, producing stable physical alignment without dedicated detection hardware.
+
+The primary challenge was integration. Combining locomotion, IR sensing, wireless communication, and path planning into a coherent real-time control loop. Individual subsystems worked well in isolation but required careful timing and parameter tuning to operate together reliably. Future improvements could include closed-loop motor control with encoders for more precise positioning, a more robust localization method beyond IR proximity, and scaling the swarm beyond four robots.
+
 ## References
+
+- Espressif Systems. *ESP-NOW Protocol Documentation*. https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/network/esp_now.html
+- Microchip Technology. *ATmega328PB Datasheet*. https://ww1.microchip.com/downloads/en/DeviceDoc/40001906A.pdf
+- Arduino. *Arduino ESP32 Core*. https://github.com/espressif/arduino-esp32
