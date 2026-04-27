@@ -238,19 +238,19 @@ If you’ve never made a GitHub pages website before, you can follow this webpag
 
 ### 2. Images
 
-![Final robot assembly](assets/final/IMG_5661.png)
+![Sub-robot ESP32 with mounted perfboard and IR components](assets/final/IMG_5661.png)
 
-![Robots in formation](assets/final/IMG_5664.png)
+![Two robots on the workbench during integration and testing](assets/final/IMG_5664.png)
 
-![Close-up of robot chassis](assets/final/IMG_5667.png)
+![Three robots with status LEDs illuminated during a test run](assets/final/IMG_5667.png)
 
-![Robot underside with motors](assets/final/IMG_5673.png)
+![Four robots assembled into the target triangular formation](assets/final/IMG_5673.png)
 
-![Electronics assembly](assets/final/IMG_5715.JPEG)
+![3D-printed triangular chassis showing multi-level structure and leg standoffs](assets/final/IMG_5715.JPEG)
 
-![ESP32 and ATmega boards](assets/esp_atmegas.PNG)
+![Main and sub ATmega328PB / ESP32 communication stacks on breadboards](assets/esp_atmegas.PNG)
 
-![IR sensing perfboards](assets/ir_perfboards.PNG)
+![IR sensing circuit wiring during assembly](assets/ir_perfboards.PNG)
 
 ### 3. Results
 
