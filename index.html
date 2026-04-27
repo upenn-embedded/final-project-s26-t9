@@ -105,8 +105,26 @@
     .modified  { color: #8a5a00; font-weight: 600; }
     .not-req   { color: #555;    font-weight: 600; }
 
+    /* ── Proof of work ── */
+    .proof { margin-top: 1.4rem; }
+    .proof h3 { font-size: 1rem; color: var(--blue); margin-bottom: 0.6rem; border-left: 3px solid var(--accent); padding-left: 0.6rem; }
+    .proof-item { margin-bottom: 1.6rem; }
+    .proof-item p { font-size: 0.92rem; color: var(--muted); margin-bottom: 0.5rem; }
+    .proof-media { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-start; }
+    .proof-media img { border-radius: 6px; border: 1px solid var(--border); max-width: 420px; width: 100%; }
+    .proof-media video { border-radius: 6px; border: 1px solid var(--border); max-width: 420px; width: 100%; }
+
+    /* ── Thumbnail ── */
+    .thumbnail-wrap { display: flex; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap; }
+    .thumbnail-wrap img { width: 400px; height: 400px; object-fit: cover; border: 1px solid var(--border); border-radius: 6px; flex-shrink: 0; }
+    .thumbnail-note { font-size: 0.88rem; color: var(--muted); max-width: 420px; }
+    .thumbnail-note strong { color: var(--text); }
+
     /* ── Conclusion ── */
     .conclusion p { max-width: 820px; }
+    .conclusion dl { max-width: 820px; }
+    .conclusion dt { font-weight: 600; color: var(--blue); margin-top: 1rem; }
+    .conclusion dd { margin: 0.2rem 0 0 1rem; color: var(--text); }
 
     /* ── References ── */
     .references ol { padding-left: 1.4rem; }
@@ -150,7 +168,7 @@
   <section id="abstract">
     <h2>Abstract</h2>
     <p>
-      We built a swarm robotics system in which four small vibration-motor-driven robots autonomously
+      We built a swarm robotics system in which four small DC-wheel-driven robots autonomously
       assemble into a target 2D shape from arbitrary starting positions and orientations. A central
       ATmega328PB acts as the coordinator: it polls each robot over an ESP-NOW wireless link, constructs
       a graph of relative robot positions using IR proximity readings, runs a path-planning algorithm,
@@ -168,11 +186,23 @@
   <section id="video">
     <h2>Demo Video</h2>
     <div class="video-wrap">
-      <video controls preload="metadata">
-        <source src="assets/final/IMG_5671.mp4" type="video/mp4">
-        <source src="assets/final/IMG_5672.mp4" type="video/mp4">
-        Your browser does not support the video tag.
-      </video>
+      <iframe src="https://drive.google.com/file/d/1B6RW0ReiUOgQtlI1qZyEWMU0iym3w7Ym/preview"
+              width="100%" height="480" allow="autoplay" allowfullscreen
+              style="border:none; display:block;"></iframe>
+    </div>
+  </section>
+
+  <!-- ── Course Thumbnail ── -->
+  <section id="thumbnail">
+    <h2>Course Thumbnail (400 × 400)</h2>
+    <div class="thumbnail-wrap">
+      <img src="assets/final/IMG_5673.png" alt="Four robots assembled into target triangular formation">
+      <p class="thumbnail-note">
+        <strong>400 × 400 px course catalog image.</strong><br><br>
+        This image shows four robots assembled into the final triangular formation, which best captures the
+        project's key result. Crop and export this image at exactly 400 × 400 px before submitting
+        to the course website.
+      </p>
     </div>
   </section>
 
@@ -236,7 +266,7 @@
         <tbody>
           <tr>
             <td>SRS-01</td>
-            <td>Each robot shall be capable of moving in at least 4 distinct directions (forward, backward, left, right) by independently controlling its vibration motors.</td>
+            <td>Each robot shall be capable of moving in at least 4 distinct directions (forward, backward, left, right) by independently controlling its wheel motors.</td>
             <td><span class="confirmed">Confirmed.</span> All four directions commanded and visually verified on a hard flat surface; each robot displaced correctly in response to motor commands.</td>
           </tr>
           <tr>
@@ -247,7 +277,7 @@
           <tr>
             <td>SRS-03</td>
             <td>Each robot shall detect a physical connection to an adjacent robot via GPIO input capture within 500 ms of contact.</td>
-            <td><span class="not-req">Not required.</span> Robots naturally slid flush against each other due to vibration dynamics on the hard surface. Discrete connection-detection logic was not needed in practice.</td>
+            <td><span class="not-req">Not required.</span> As robots drove into proximity, their flat triangular faces made contact and aligned flush naturally. Discrete connection-detection logic was not needed in practice.</td>
           </tr>
           <tr>
             <td>SRS-04</td>
@@ -272,6 +302,26 @@
         </tbody>
       </table>
     </div>
+
+    <div class="proof">
+      <h3>Proof of Work</h3>
+
+      <div class="proof-item">
+        <p><strong>SRS-01 — Directional movement:</strong> Each robot was commanded in all four directions and displacement was observed on a hard flat surface. The clip below shows a robot responding to forward, backward, left, and right commands.</p>
+        <div class="proof-media">
+          <video controls preload="metadata">
+            <source src="assets/sprint/robot_movement.mov" type="video/mp4">
+          </video>
+        </div>
+      </div>
+
+      <div class="proof-item">
+        <p><strong>SRS-07 — Final shape assembly:</strong> After executing the full instruction sequence, all four robots assembled into the target triangular formation. The photo below shows the final configuration; positional error for each robot was measured within 3 cm of its designated slot.</p>
+        <div class="proof-media">
+          <img src="assets/final/IMG_5673.png" alt="Four robots in target triangular formation">
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ── HRS Results ── -->
@@ -289,7 +339,7 @@
         <tbody>
           <tr>
             <td>HRS-01</td>
-            <td>Each vibration motor shall produce sufficient force to displace the robot on a hard, flat surface in a commanded direction within 0.5 seconds of activation.</td>
+            <td>Each wheel motor shall produce sufficient force to displace the robot on a hard, flat surface in a commanded direction within 0.5 seconds of activation.</td>
             <td><span class="confirmed">Confirmed.</span> Both motors tested individually and in combination; robot displaced directionally on a hard flat surface within 0.5 seconds of activation.</td>
           </tr>
           <tr>
@@ -305,12 +355,12 @@
           <tr>
             <td>HRS-04</td>
             <td>The neodymium magnets shall hold two connected robots together under normal motor operation, but allow separation at full power.</td>
-            <td><span class="not-req">Not required.</span> Robots naturally slid flush against each other under vibration; magnetic latching was unnecessary and magnets were not installed.</td>
+            <td><span class="not-req">Not required.</span> As robots drove into position their flat triangular faces aligned flush on contact; magnetic latching was unnecessary and magnets were not installed.</td>
           </tr>
           <tr>
             <td>HRS-05</td>
             <td>The conductive connection plates shall produce a GPIO logic HIGH on the receiving robot within 200 ms of physical contact.</td>
-            <td><span class="not-req">Not required.</span> Robots became flush naturally through vibrational sliding; contact-plate detection was not needed and plates were not installed.</td>
+            <td><span class="not-req">Not required.</span> Robots became flush naturally as they drove into position; contact-plate detection was not needed and plates were not installed.</td>
           </tr>
           <tr>
             <td>HRS-06</td>
@@ -325,6 +375,26 @@
         </tbody>
       </table>
     </div>
+
+    <div class="proof">
+      <h3>Proof of Work</h3>
+
+      <div class="proof-item">
+        <p><strong>HRS-01 — Motor displacement:</strong> Both wheel motors were activated individually and in combination on a hard flat surface. The robot displaced directionally within 0.5 seconds. The clip below demonstrates forward and turning motion driven by differential motor activation.</p>
+        <div class="proof-media">
+          <video controls preload="metadata">
+            <source src="assets/sprint/robot_movement.mov" type="video/mp4">
+          </video>
+        </div>
+      </div>
+
+      <div class="proof-item">
+        <p><strong>HRS-02 — IR ADC distinguishability:</strong> The IR phototransistor sensing circuit (shown below) was tested at known separations from 1–10 cm. ADC readings changed monotonically with distance, with at least 10 ADC counts of difference per centimeter across the tested range.</p>
+        <div class="proof-media">
+          <img src="assets/ir_perfboards.PNG" alt="IR sensing circuit during testing">
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ── Conclusion ── -->
@@ -332,26 +402,58 @@
     <h2>Conclusion</h2>
     <p>
       The swarm robotics system successfully demonstrated autonomous shape assembly from arbitrary
-      starting positions. Four robots, each equipped with vibration motors, IR proximity sensing, and
+      starting positions. Four robots, each equipped with wheel motors, IR proximity sensing, and
       ESP-NOW wireless communication, were coordinated by a central ATmega328PB controller to form a
       target 2D shape without manual intervention after the initial command.
     </p>
-    <p>
-      Several design adaptations were made during development. The originally planned nRF24L01+ radio
-      was replaced by ESP-NOW, which proved more reliable and easier to integrate at the required
-      range. LDO regulators were replaced with a buck converter for better efficiency under full motor
-      load. The magnetic latching and contact-plate detection systems turned out to be unnecessary:
-      on a hard surface, vibrating robots naturally slide flush against each other, producing stable
-      physical alignment without dedicated detection hardware.
-    </p>
-    <p>
-      The primary challenge was integration — combining locomotion, IR sensing, wireless
-      communication, and path planning into a coherent real-time control loop. Individual subsystems
-      worked well in isolation but required careful timing and parameter tuning to operate together
-      reliably. Future improvements could include closed-loop motor control with encoders for more
-      precise positioning, a more robust localization method beyond IR proximity, and scaling the
-      swarm beyond four robots.
-    </p>
+    <dl>
+      <dt>What did you learn from it?</dt>
+      <dd>We learned how quickly a hardware system can diverge from its software model. Wheel motors
+      are inherently imprecise, which meant our path-planning algorithm had to be tolerant of positional
+      error rather than assume exact movement. We also learned how much timing matters in a multi-node
+      SPI + ESP-NOW system — small guard delays and staggered reply windows were essential to prevent
+      collisions and data corruption.</dd>
+
+      <dt>What went well?</dt>
+      <dd>The wireless communication stack (ATmega → ESP32 → ESP-NOW → Sub ESP32 → Sub ATmega) came
+      together more cleanly than expected. Once the SPI framing protocol and guard delays were tuned,
+      the end-to-end poll cycle was rock-solid and consistently under 200 ms. The 3D-printed chassis
+      also held up well mechanically throughout testing.</dd>
+
+      <dt>What accomplishments are you most proud of?</dt>
+      <dd>Getting four independently-powered robots to autonomously assemble into a target shape from
+      random starting positions, with no manual repositioning after the initial command, was the
+      central goal of the project — and we achieved it. We're also proud of discovering that the triangular geometry naturally solved our connection-detection problem: as robots drove into position their flat faces aligned flush on contact,
+      eliminating the need for magnets and contact plates entirely.</dd>
+
+      <dt>Did you have to change your approach?</dt>
+      <dd>Yes, significantly. The original design called for vibration motors for locomotion, but we
+      switched to DC wheel motors which gave us far more reliable and controllable directional movement.
+      The nRF24L01+ radio was replaced with ESP-NOW for more reliable range and simpler integration.
+      LDOs were replaced with a buck converter for better efficiency under full motor load. The magnetic
+      latching and conductive plate connection-detection systems were cut entirely once we observed that
+      the triangular faces align flush naturally when robots drive into contact.</dd>
+
+      <dt>What could have been done differently?</dt>
+      <dd>We would have started integration earlier. Each subsystem — locomotion, IR sensing, radio,
+      path planning — worked in isolation, but combining them revealed timing conflicts and
+      parameter sensitivities that took considerable time to resolve. Earlier end-to-end testing
+      would have surfaced these issues sooner.</dd>
+
+      <dt>Did you encounter obstacles you didn't anticipate?</dt>
+      <dd>The biggest surprise was how much the floor surface affected robot movement. On some surfaces
+      the robots barely moved; on others they moved too fast to control precisely. We had to settle on
+      a specific surface (hard, smooth floor) as a demo constraint. We also hadn't anticipated that
+      ambient IR light would vary enough between test environments to require careful tuning of the
+      ambient-subtraction baseline.</dd>
+
+      <dt>What could be the next step for this project?</dt>
+      <dd>The most impactful improvement would be switching to closed-loop motor control — adding wheel
+      encoders or a small IMU so the robot knows how far it has actually moved. This would make
+      path planning far more reliable and reduce the need for re-polling cycles. Beyond that, scaling
+      to a larger swarm (8+ robots) and supporting arbitrary target shapes (not just triangles) would
+      be natural extensions.</dd>
+    </dl>
   </section>
 
   <!-- ── References ── -->
