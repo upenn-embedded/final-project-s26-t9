@@ -250,9 +250,7 @@ If you’ve never made a GitHub pages website before, you can follow this webpag
 
 ![Main and sub ATmega328PB / ESP32 communication stacks on breadboards](assets/esp_atmegas.PNG)
 
-![IR sensing circuit wiring during assembly](assets/ir_perfboards.PNG)
-
-### 3. Results
+3. Results
 
 #### 3.1 Software Requirements Specification (SRS) Results
 
