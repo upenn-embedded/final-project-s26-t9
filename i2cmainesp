@@ -151,12 +151,11 @@ loop() {
     // delay(100);
 
     Wire.beginTransmission(SLAVE_ADDR);
-    Wire.write(0xA1); // CMD_START_COLL
+    Wire.write(0xA1);
     Wire.endTransmission();
 
-    delay(2); // small settle (not critical)
+    delay(2);
 
-    // 2. request response
     Wire.requestFrom(SLAVE_ADDR, (uint8_t)2);
 
     if (Wire.available() >= 2) {

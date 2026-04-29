@@ -2,7 +2,6 @@
 #include <WiFi.h>
 #include <esp_now.h>
 
-// Broadcast address — all ESP32s in range receive this
 const uint8_t BROADCAST_ADDR[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // Must match the struct in espnow-receiver.ino
@@ -26,7 +25,6 @@ void
 loop() {
     Serial.begin(115200);
 
-    // Station mode — no AP needed, just enables the radio
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
 
@@ -38,7 +36,6 @@ loop() {
 
     esp_now_register_send_cb(onSent);
 
-    // Register the broadcast address as the only peer
     esp_now_peer_info_t peer = {};
     memcpy(peer.peer_addr, BROADCAST_ADDR, sizeof(BROADCAST_ADDR));
     peer.channel = 0;   // 0 = use current channel

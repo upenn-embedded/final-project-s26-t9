@@ -35,7 +35,6 @@ void
 loop() {
     Serial.begin(115200);
 
-    // Station mode — no AP needed, just enables the radio
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
 
@@ -45,7 +44,6 @@ loop() {
             ;
     }
 
-    // onReceive fires automatically for every incoming broadcast
     esp_now_register_recv_cb(onReceive);
 
     Serial.println("Receiver ready. Waiting for broadcasts...");

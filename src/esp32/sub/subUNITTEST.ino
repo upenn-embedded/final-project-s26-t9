@@ -7,7 +7,7 @@ void setup() {
     Serial.begin(115200);
     SPI.begin();
     pinMode(SS_PIN, OUTPUT);
-    digitalWrite(SS_PIN, HIGH);  // SS idle high
+    digitalWrite(SS_PIN, HIGH);
     delay(1000);  // give ATmega time to boot
 }
 
@@ -31,5 +31,5 @@ void loop() {
     Serial.print("Got robot address: ");
     Serial.println(addr);
 
-    delay(1000);  // send every second
+    delay(1000);
 }
