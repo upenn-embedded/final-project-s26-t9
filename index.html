@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Self-Assembling Robots — ESE 3500 Team 9</title>
+  <title>Self-Assembling Robots:ESE 3500 Team 9</title>
   <style>
     :root {
       --blue: #1a3a5c;
@@ -21,7 +21,7 @@
       line-height: 1.65;
     }
 
-    /* ── Header ── */
+    /*Header */
     header {
       background: var(--blue);
       color: #fff;
@@ -48,7 +48,7 @@
     }
     .header-links a:hover { opacity: 1; }
 
-    /* ── Layout ── */
+    /*Layout */
     main { max-width: 960px; margin: 0 auto; padding: 0 1.5rem 4rem; }
     section { margin-top: 3rem; }
     h2 {
@@ -61,7 +61,7 @@
     h3 { font-size: 1.1rem; color: var(--accent); margin: 1.4rem 0 0.5rem; }
     p { margin-bottom: 0.9rem; color: var(--text); }
 
-    /* ── Video ── */
+    /*Video */
     .video-wrap {
       background: #000;
       border-radius: 8px;
@@ -70,7 +70,7 @@
     }
     .video-wrap video { display: block; width: 100%; max-height: 540px; }
 
-    /* ── Image gallery ── */
+    /*Image gallery */
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -85,11 +85,11 @@
       background: var(--light);
     }
 
-    /* ── Block diagram ── */
+    /*Block diagram */
     .diagram-wrap { text-align: center; margin: 1rem 0; }
     .diagram-wrap img { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; }
 
-    /* ── Tables ── */
+    /*Tables */
     .table-wrap { overflow-x: auto; }
     table {
       width: 100%;
@@ -105,7 +105,7 @@
     .modified  { color: #8a5a00; font-weight: 600; }
     .not-req   { color: #555;    font-weight: 600; }
 
-    /* ── Proof of work ── */
+    /*Proof of work */
     .proof { margin-top: 1.4rem; }
     .proof h3 { font-size: 1rem; color: var(--blue); margin-bottom: 0.6rem; border-left: 3px solid var(--accent); padding-left: 0.6rem; }
     .proof-item { margin-bottom: 1.6rem; }
@@ -114,24 +114,24 @@
     .proof-media img { border-radius: 6px; border: 1px solid var(--border); max-width: 420px; width: 100%; }
     .proof-media video { border-radius: 6px; border: 1px solid var(--border); max-width: 420px; width: 100%; }
 
-    /* ── Thumbnail ── */
+    /*Thumbnail */
     .thumbnail-wrap { display: flex; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap; }
     .thumbnail-wrap img { width: 400px; height: 400px; object-fit: cover; border: 1px solid var(--border); border-radius: 6px; flex-shrink: 0; }
     .thumbnail-note { font-size: 0.88rem; color: var(--muted); max-width: 420px; }
     .thumbnail-note strong { color: var(--text); }
 
-    /* ── Conclusion ── */
+    /*Conclusion */
     .conclusion p { max-width: 820px; }
     .conclusion dl { max-width: 820px; }
     .conclusion dt { font-weight: 600; color: var(--blue); margin-top: 1rem; }
     .conclusion dd { margin: 0.2rem 0 0 1rem; color: var(--text); }
 
-    /* ── References ── */
+    /*References */
     .references ol { padding-left: 1.4rem; }
     .references li { margin-bottom: 0.4rem; font-size: 0.92rem; color: var(--muted); }
     .references a { color: var(--accent); }
 
-    /* ── Footer ── */
+    /*Footer */
     footer {
       text-align: center;
       font-size: 0.82rem;
@@ -151,7 +151,7 @@
 
 <header>
   <h1>Self-Assembling Robots</h1>
-  <p class="subtitle">ESE 3500 — Final Project — Team 9 &nbsp;|&nbsp; Spring 2026</p>
+  <p class="subtitle">ESE 3500:Final Project:Team 9 &nbsp;|&nbsp; Spring 2026</p>
   <div class="team-badges">
     <span class="badge">Ronil Laad</span>
     <span class="badge">Veer Kakar</span>
@@ -164,7 +164,7 @@
 
 <main>
 
-  <!-- ── Abstract ── -->
+  <!--Abstract -->
   <section id="abstract">
     <h2>Abstract</h2>
     <p>
@@ -182,7 +182,7 @@
     </p>
   </section>
 
-  <!-- ── Video ── -->
+  <!--Video -->
   <section id="video">
     <h2>Demo Video</h2>
     <div class="video-wrap">
@@ -192,7 +192,7 @@
     </div>
   </section>
 
-  <!-- ── Images ── -->
+  <!--Images -->
   <section id="images">
     <h2>Images</h2>
     <div class="gallery">
@@ -223,7 +223,7 @@
     </div>
   </section>
 
-  <!-- ── System Overview ── -->
+  <!--System Overview -->
   <section id="system">
     <h2>System Overview</h2>
     <p>
@@ -237,7 +237,7 @@
     </div>
   </section>
 
-  <!-- ── SRS Results ── -->
+  <!--SRS Results -->
   <section id="srs">
     <h2>Software Requirements Specification (SRS) Results</h2>
     <div class="table-wrap">
@@ -293,7 +293,7 @@
       <h3>Proof of Work</h3>
 
       <div class="proof-item">
-        <p><strong>SRS-07 — Final shape assembly:</strong> After executing the full instruction sequence, all four robots assembled into the target triangular formation. The photo below shows the final configuration; positional error for each robot was measured within 3 cm of its designated slot.</p>
+        <p><strong>SRS-07. Final shape assembly.</strong> After executing the full instruction sequence, all four robots assembled into the target triangular formation. The photo below shows the final configuration; positional error for each robot was measured within 3 cm of its designated slot.</p>
         <div class="proof-media">
           <img src="assets/final/IMG_5673.png" alt="Four robots in target triangular formation">
         </div>
@@ -301,7 +301,7 @@
     </div>
   </section>
 
-  <!-- ── HRS Results ── -->
+  <!--HRS Results -->
   <section id="hrs">
     <h2>Hardware Requirements Specification (HRS) Results</h2>
     <div class="table-wrap">
@@ -357,7 +357,7 @@
       <h3>Proof of Work</h3>
 
       <div class="proof-item">
-        <p><strong>HRS-01 — Motor displacement:</strong> Both wheel motors were activated individually and in combination on a hard flat surface. The robot displaced directionally within 0.5 seconds. The clip below demonstrates forward and turning motion driven by differential motor activation.</p>
+        <p><strong>HRS-01. Motor displacement.</strong> Both wheel motors were activated individually and in combination on a hard flat surface. The robot displaced directionally within 0.5 seconds. The clip below demonstrates forward and turning motion driven by differential motor activation.</p>
         <div class="proof-media">
           <video controls preload="metadata">
             <source src="assets/sprint/robot_movement.mov" type="video/mp4">
@@ -366,7 +366,7 @@
       </div>
 
       <div class="proof-item">
-        <p><strong>HRS-02 — IR ADC distinguishability:</strong> The IR phototransistor sensing circuit (shown below) was tested at known separations from 1–10 cm. ADC readings changed monotonically with distance, with at least 10 ADC counts of difference per centimeter across the tested range.</p>
+        <p><strong>HRS-02. IR ADC distinguishability.</strong> The IR phototransistor sensing circuit (shown below) was tested at known separations from 1–10 cm. ADC readings changed monotonically with distance, with at least 10 ADC counts of difference per centimeter across the tested range.</p>
         <div class="proof-media">
           <img src="assets/ir_perfboards.PNG" alt="IR sensing circuit during testing">
         </div>
@@ -374,7 +374,7 @@
     </div>
   </section>
 
-  <!-- ── Conclusion ── -->
+  <!--Conclusion -->
   <section id="conclusion" class="conclusion">
     <h2>Conclusion</h2>
     <p>
@@ -388,7 +388,7 @@
       <dd>We learned how quickly a hardware system can diverge from its software model. Wheel motors
       are inherently imprecise, which meant our path-planning algorithm had to be tolerant of positional
       error rather than assume exact movement. We also learned how much timing matters in a multi-node
-      SPI + ESP-NOW system — small guard delays and staggered reply windows were essential to prevent
+      SPI and ESP-NOW system. Small guard delays and staggered reply windows were essential to prevent
       collisions and data corruption.</dd>
 
       <dt>What went well?</dt>
@@ -400,7 +400,7 @@
       <dt>What accomplishments are you most proud of?</dt>
       <dd>Getting four independently-powered robots to autonomously assemble into a target shape from
       random starting positions, with no manual repositioning after the initial command, was the
-      central goal of the project — and we achieved it. We're also proud of discovering that the triangular geometry naturally solved our connection-detection problem: as robots drove into position their flat faces aligned flush on contact,
+      central goal of the project, and we achieved it. We're also proud of discovering that the triangular geometry naturally solved our connection-detection problem. As robots drove into position their flat faces aligned flush on contact,
       eliminating the need for magnets and contact plates entirely.</dd>
 
       <dt>Did you have to change your approach?</dt>
@@ -412,8 +412,7 @@
       the triangular faces align flush naturally when robots drive into contact.</dd>
 
       <dt>What could have been done differently?</dt>
-      <dd>We would have started integration earlier. Each subsystem — locomotion, IR sensing, radio,
-      path planning — worked in isolation, but combining them revealed timing conflicts and
+      <dd>We would have started integration earlier. Each subsystem (locomotion, IR sensing, radio, path planning) worked in isolation, but combining them revealed timing conflicts and
       parameter sensitivities that took considerable time to resolve. Earlier end-to-end testing
       would have surfaced these issues sooner.</dd>
 
@@ -425,7 +424,7 @@
       ambient-subtraction baseline.</dd>
 
       <dt>What could be the next step for this project?</dt>
-      <dd>The most impactful improvement would be switching to closed-loop motor control — adding wheel
+      <dd>The most impactful improvement would be switching to closed-loop motor control by adding wheel
       encoders or a small IMU so the robot knows how far it has actually moved. This would make
       path planning far more reliable and reduce the need for re-polling cycles. Beyond that, scaling
       to a larger swarm (8+ robots) and supporting arbitrary target shapes (not just triangles) would
@@ -433,7 +432,7 @@
     </dl>
   </section>
 
-  <!-- ── References ── -->
+  <!--References -->
   <section id="references" class="references">
     <h2>References</h2>
     <ol>
@@ -446,7 +445,7 @@
 </main>
 
 <footer>
-  Self-Assembling Robots &nbsp;|&nbsp; ESE 3500 — University of Pennsylvania &nbsp;|&nbsp; Team 9 &nbsp;|&nbsp; Spring 2026
+  Self-Assembling Robots &nbsp;|&nbsp; ESE 3500:University of Pennsylvania &nbsp;|&nbsp; Team 9 &nbsp;|&nbsp; Spring 2026
 </footer>
 
 </body>
